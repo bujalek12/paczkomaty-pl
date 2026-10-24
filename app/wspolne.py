@@ -13,14 +13,16 @@ REPO = "https://github.com/bujalek12/paczkomaty-pl"
 MOTYWY = {
     "ciemny": {
         "tlo": "#0f1a24", "panel": "#162433", "linia": "#24384b",
-        "tekst": "#e6edf2", "przygaszony": "#8ca0b3", "akcent": "#3987e5", "budowa": "#c98500",
-        "skala": ["#1b2c3c", "#9ec5f4"],  # pokrycie: od ledwo widocznego do jasnego niebieskiego
+        "tekst": "#e6edf2", "przygaszony": "#8ca0b3", "akcent": "#3987e5",
+        # mapa: niebieski = blisko paczkomatu, szary = posrodku, bursztynowy = daleko / nowe
+        # (para sprawdzona walidatorem: daltonizm i kontrast 3:1 z tlem)
+        "blisko": "#3987e5", "srodek": "#4a5866", "daleko": "#c98500",
         "mapa": "dark",
     },
     "jasny": {
         "tlo": "#f2f5f7", "panel": "#ffffff", "linia": "#d5dee5",
-        "tekst": "#14212b", "przygaszony": "#5b6b78", "akcent": "#2a78d6", "budowa": "#eda100",
-        "skala": ["#e3eaf0", "#1c5cab"],
+        "tekst": "#14212b", "przygaszony": "#5b6b78", "akcent": "#2a78d6",
+        "blisko": "#2a78d6", "srodek": "#b4bec7", "daleko": "#b06a00",
         "mapa": "light",
     },
 }
@@ -115,6 +117,24 @@ def naglowek(strony: list) -> dict:
       .legenda span {{ display: inline-flex; align-items: center; gap: .45rem; }}
       .legenda i.kreska {{ width: 16px; height: 2px; border-radius: 1px; }}
       .legenda i.pole {{ width: 11px; height: 11px; border-radius: 2px; opacity: .8; }}
+      .kafle {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1px;
+                background: var(--linia); border: 1px solid var(--linia); border-radius: 6px; overflow: hidden;
+                margin: 0 0 2rem; }}
+      .kafle div {{ background: var(--tlo); padding: .8rem 1rem; font-size: .86rem; color: var(--przygaszony);
+                    line-height: 1.35; }}
+      .kafle b {{ display: block; font-family: "Barlow Semi Condensed"; font-weight: 600; font-size: 1.7rem;
+                  color: var(--tekst); font-variant-numeric: tabular-nums; line-height: 1.1; }}
+      .warstwa-opis {{ max-width: 70ch; margin: .2rem 0 .7rem; }}
+      .warstwa-opis b {{ font-weight: 600; }}
+      .legenda {{ margin: 0 0 .7rem; }}
+      .legenda i.pole {{ opacity: 1; }}
+      .slupki {{ display: grid; grid-template-columns: minmax(9rem, 13rem) 1fr 3.4rem; gap: .5rem .8rem;
+                 align-items: center; font-size: .9rem; max-width: 760px; margin: .4rem 0 .6rem; }}
+      .slupki-tabela {{ max-width: 760px; }}
+      .slupki-tabela .tlo-paska, .slupki .tlo-paska {{ height: 12px; background: var(--panel); border-radius: 0 3px 3px 0; overflow: hidden; }}
+      .slupki-tabela .pasek, .slupki .pasek {{ height: 100%; border-radius: 0 3px 3px 0; }}
+      .slupki .wart {{ text-align: right; font-variant-numeric: tabular-nums; }}
+      .slupki small {{ display: block; color: var(--przygaszony); font-size: .8rem; }}
       [data-testid="stPageLink"] a {{ padding: .2rem .5rem; border-radius: 4px; }}
       [data-testid="stPageLink"] a span {{ color: var(--przygaszony) !important; font-weight: 500; }}
       [data-testid="stPageLink"] a[aria-current="page"] span {{ color: var(--tekst) !important; }}
