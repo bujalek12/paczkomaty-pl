@@ -42,3 +42,17 @@ def test_nie_pobiera_drugi_raz(tmp_path):
     assert wynik == plik
     assert zapytania == []
     assert plik.read_bytes() == b"juz jest"
+
+
+def test_pobiera_i_rozpakowuje_gzip(tmp_path):
+    import gzip
+
+    plik = tmp_path / "kontur.gpkg"
+
+    def obsluga(zadanie):
+        assert zadanie.url.path.endswith(".gpkg.gz")
+        return httpx.Response(200, content=gzip.compress(b"zawartosc gpkg"))
+
+    pobierz_kontur(plik, klient=httpx.Client(transport=httpx.MockTransport(obsluga)))
+
+    assert plik.read_bytes() == b"zawartosc gpkg"

@@ -3,6 +3,7 @@
 GeoPackage to zwykla baza SQLite: wystarczy odczytac kolumny h3 i population, bez bibliotek GIS.
 """
 
+import gzip
 import sqlite3
 from pathlib import Path
 
@@ -11,11 +12,11 @@ import pandas as pd
 
 from paczkomaty.http import pobierz
 
-URL = "https://geodata-eu-central-1-kontur-public.s3.amazonaws.com/kontur_datasets/kontur_population_PL_20231101.gpkg"
+URL = "https://geodata-eu-central-1-kontur-public.s3.amazonaws.com/kontur_datasets/kontur_population_PL_20231101.gpkg.gz"
 
 
 def pobierz_kontur(cel: Path, klient: httpx.Client | None = None) -> Path:
-    """Pobiera plik GeoPackage (ok. 22 MB) tylko wtedy, gdy jeszcze go nie ma."""
+    """Pobiera spakowany GeoPackage (ok. 22 MB), rozpakowuje; nic nie robi, gdy plik juz jest."""
     if cel.exists():
         return cel
     cel.parent.mkdir(parents=True, exist_ok=True)
@@ -23,7 +24,7 @@ def pobierz_kontur(cel: Path, klient: httpx.Client | None = None) -> Path:
     klient = klient or httpx.Client(timeout=300, follow_redirects=True)
     try:
         tymczasowy = cel.with_suffix(".pobieranie")
-        tymczasowy.write_bytes(pobierz(klient, URL).content)
+        tymczasowy.write_bytes(gzip.decompress(pobierz(klient, URL).content))
         tymczasowy.replace(cel)  # podmiana dopiero po pelnym pobraniu
         return cel
     finally:
