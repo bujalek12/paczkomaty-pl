@@ -1,0 +1,91 @@
+# Codzienny zrzut sieci InPost i historia zmian.
+# Surowe zrzuty (lista punktow) trafiaja do prywatnego repo paczkomaty-dane (wydanie "zrzuty"),
+# tutaj do wydania "dane" ida tylko agregaty: liczby paczkomatow i zmian wg wojewodztwa.
+name: zrzut
+
+on:
+  schedule:
+    - cron: "23 5 * * *"   # raz dziennie rano; minuta "nieokragla", bo pelne godziny sa najbardziej oblozone
+  workflow_dispatch:
+
+concurrency:
+  group: zrzut             # nigdy dwa uruchomienia naraz: oba dopisywalyby do tej samej historii
+  cancel-in-progress: false
+
+permissions:
+  contents: write          # zapis agregatow do wydania "dane" w tym repo
+
+env:
+  DANE_REPO: bujalek12/paczkomaty-dane
+
+jobs:
+  zrzut:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Sprawdzenie tokenu do repo z danymi
+        id: token
+        env:
+          DANE_TOKEN: ${{ secrets.DANE_TOKEN }}
+        run: |
+          if [ -z "$DANE_TOKEN" ]; then
+            echo "Brak sekretu DANE_TOKEN: zrzut pominiety." >> "$GITHUB_STEP_SUMMARY"
+            echo "jest=nie" >> "$GITHUB_OUTPUT"
+          else
+            echo "jest=tak" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.token.outputs.jest == 'tak'
+      - uses: astral-sh/setup-uv@v6
+        if: steps.token.outputs.jest == 'tak'
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+        if: steps.token.outputs.jest == 'tak'
+
+      - name: Ostatni zrzut sprzed dzisiaj i historia zmian (prywatne repo)
+        if: steps.token.outputs.jest == 'tak'
+        env:
+          GH_TOKEN: ${{ secrets.DANE_TOKEN }}
+        run: |
+          mkdir -p data/zrzuty data/agregaty
+          dzis="inpost_$(date -u +%F).parquet"
+          # sprzed dzisiaj: przy ponownym uruchomieniu tego samego dnia porownujemy z wczoraj, nie z samym soba
+          ostatni=$(gh release view zrzuty -R "$DANE_REPO" --json assets --jq '.assets[].name' \
+            | grep -E '^inpost_[0-9]{4}-[0-9]{2}-[0-9]{2}\.parquet$' | sort | awk -v d="$dzis" '$0 < d' | tail -1)
+          if [ -n "$ostatni" ]; then
+            gh release download zrzuty -R "$DANE_REPO" --dir data/zrzuty --pattern "$ostatni" --pattern zmiany.parquet
+          else
+            echo "brak poprzedniego zrzutu: dzisiejszy bedzie punktem startowym"
+          fi
+
+      - name: Dotychczasowe agregaty (wydanie "dane")
+        if: steps.token.outputs.jest == 'tak'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download dane --dir data/agregaty \
+            --pattern stan_dzienny.parquet --pattern zmiany_dzienne.parquet || echo "brak agregatow"
+
+      - name: Zrzut sieci
+        if: steps.token.outputs.jest == 'tak'
+        run: uv run python -m paczkomaty.zrzut
+
+      - name: Zapis surowego zrzutu (prywatne repo)
+        if: steps.token.outputs.jest == 'tak'
+        env:
+          GH_TOKEN: ${{ secrets.DANE_TOKEN }}
+        run: |
+          dzis=$(date -u +%F)
+          gh release upload zrzuty -R "$DANE_REPO" --clobber \
+            "data/zrzuty/inpost_${dzis}.parquet" "data/zrzuty/inpost_${dzis}_jakosc.json" data/zrzuty/zmiany.parquet
+
+      - name: Zapis agregatow (wydanie "dane")
+        if: steps.token.outputs.jest == 'tak'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view dane > /dev/null 2>&1 || gh release create dane --title "Dane" \
+            --notes "Agregaty aktualizowane automatycznie (liczby paczkomatow i zmian wg wojewodztwa)."
+          gh release upload dane --clobber data/agregaty/stan_dzienny.parquet data/agregaty/zmiany_dzienne.parquet

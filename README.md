@@ -35,6 +35,8 @@ a nie liczby osób.
 | `src/paczkomaty/` | pobieranie danych (API InPost, Kontur, Overpass) z ponawianiem, pokrycie ludności, agregaty na sześciokąt |
 | `notebooks/01_eksploracja` | jakość danych, kluczowe liczby, mapy statyczne |
 | `app/` | aplikacja Streamlit z interaktywną mapą (pydeck, warstwa H3) |
+| `src/paczkomaty/zrzut.py`, `historia.py` | codzienny zrzut sieci i historia zmian (nowe, usunięte, zmiana statusu) |
+| `.github/workflows/` | testy przy każdym pushu, codzienny zrzut sieci |
 | `tests/` | testy jednostkowe (pytest) |
 
 ## Uruchomienie
@@ -48,6 +50,13 @@ uv run pytest
 
 Surowe dane trafiają do `data/` (poza repozytorium). Aplikacja czyta tylko zagregowany plik
 `data/agregaty/heksagony_res8.parquet`: liczbę paczkomatów i ludność na sześciokąt, bez pojedynczych punktów.
+
+## Historia sieci
+
+Od 24.10.2026 workflow `zrzut` codziennie zapisuje stan sieci i porównuje go z poprzednim dniem. Publiczne są tylko
+agregaty (wydanie `dane`): `stan_dzienny.parquet` (liczba paczkomatów wg województwa i statusu) i
+`zmiany_dzienne.parquet` (liczba nowych, usuniętych i zmian statusu wg województwa). Jeśli API zwróci wyraźnie mniej
+punktów niż dzień wcześniej (poniżej 95%), zrzut jest odrzucany, żeby awaria nie wyglądała jak zamknięcie paczkomatów.
 
 ## Dalej
 
