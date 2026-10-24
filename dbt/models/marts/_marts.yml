@@ -1,0 +1,48 @@
+version: 2
+
+models:
+  - name: heksagony
+    description: Szesciokat H3 res 8 z ludnoscia, automatami, regionem, typem zabudowy i klasa zasiegu.
+    columns:
+      - name: h3
+        data_tests: [unique, not_null]
+      - name: ludnosc_500m
+        description: Mieszkancy z dzialajacym paczkomatem InPost do 500 m (linia prosta, liczone na res 9).
+        data_tests:
+          - not_null
+          - nie_wiecej_niz_ludnosc
+      - name: typ_zabudowy
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Miasta', 'Małe miasta i osiedla', 'Wieś i przedmieścia', 'Zabudowa rozproszona',
+                         'Bez mieszkańców']
+      - name: klasa_zasiegu
+        data_tests:
+          - accepted_values: {arguments: {values: ['do 500 m', 'do 1 km', 'ponad 1 km', 'bez mieszkańców']}}
+
+  - name: powiaty
+    description: Dostepnosc paczkomatow w powiatach (380). Klucz powiat_id z granic PRG.
+    columns:
+      - name: powiat_id
+        data_tests: [unique, not_null]
+      - name: nazwa
+        description: Nazwa do wyswietlania; przy powtarzajacych sie nazwach z wojewodztwem w nawiasie.
+        data_tests: [unique, not_null]
+      - name: wojewodztwo
+        data_tests: [not_null]
+      - name: udzial_500m
+        data_tests: [not_null, {w_zakresie: {arguments: {min: 0, max: 1}}}]
+      - name: udzial_1km
+        data_tests: [not_null, {w_zakresie: {arguments: {min: 0, max: 1}}}]
+      - name: wspolczynnik_kalibracji
+        description: Ludnosc GUS / ludnosc Kontur w powiecie. Brak = powiat bez dopasowania w danych GUS.
+        data_tests: [not_null]
+
+  - name: wojewodztwa
+    description: Dostepnosc paczkomatow w 16 wojewodztwach i kontrola zgodnosci z polem "province" z API.
+    columns:
+      - name: wojewodztwo
+        data_tests: [unique, not_null]
+      - name: udzial_500m
+        data_tests: [not_null, {w_zakresie: {arguments: {min: 0, max: 1}}}]

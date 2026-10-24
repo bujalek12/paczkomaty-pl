@@ -16,6 +16,7 @@ from paczkomaty.http import pobierz
 _BAZA = "https://raw.githubusercontent.com/ppatrzyk/polska-geojson/74a22f97cf822aa1cb49802c1700ccb8b6340eca"
 URL_POWIATY = f"{_BAZA}/powiaty/powiaty-medium.geojson"
 URL_WOJEWODZTWA = f"{_BAZA}/wojewodztwa/wojewodztwa-medium.geojson"
+ZMIANY_NAZW = {"powiat jeleniogórski": "powiat karkonoski"}  # granice sprzed zmiany nazwy w 2021 r.
 MAX_PIERSCIEN = 3  # komorki przygraniczne: szukamy regionu u sasiadow do 3 pierscieni H3 (ok. 2 km przy res 8)
 
 
@@ -37,6 +38,7 @@ def pobierz_granice(katalog: Path, klient: httpx.Client | None = None) -> tuple[
 
 def nazwa_powiatu(nazwa: str) -> str:
     """'powiat Bytom' -> 'Bytom' (miasto na prawach powiatu); 'powiat oleski' zostaje bez zmian."""
+    nazwa = ZMIANY_NAZW.get(nazwa, nazwa)
     reszta = nazwa.removeprefix("powiat ")
     return reszta if reszta[:1].isupper() else nazwa
 

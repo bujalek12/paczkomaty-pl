@@ -1,0 +1,9 @@
+# Profil polaczenia trzymany w repo (zwykle jest w ~/.dbt), bo nie ma tu hasel:
+# DuckDB to plik na dysku. Sciezke mozna nadpisac zmienna PACZKOMATY_BAZA.
+paczkomaty:
+  target: lokalnie
+  outputs:
+    lokalnie:
+      type: duckdb
+      path: "{{ env_var('PACZKOMATY_BAZA', '../data/paczkomaty.duckdb') }}"
+      threads: 4

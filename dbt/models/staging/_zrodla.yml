@@ -1,0 +1,24 @@
+version: 2
+
+sources:
+  - name: agregaty
+    description: >
+      Pliki parquet z data/agregaty (dbt uruchamiany z katalogu dbt/). Tylko agregaty: liczby na szesciokat
+      albo na wojewodztwo, bez pojedynczych punktow z API.
+    meta:
+      external_location: "read_parquet('{{ env_var('PACZKOMATY_DANE', '../data') }}/agregaty/{name}.parquet')"
+    tables:
+      - name: heksagony_res8
+        description: Ludnosc (Kontur) i liczba automatow na szesciokat H3 res 8 (notebook 01).
+        columns:
+          - name: h3
+            data_tests: [unique, not_null]
+      - name: regiony_heksagonow
+        description: Powiat i wojewodztwo kazdego szesciokata (paczkomaty.hurtownia, granice PRG).
+        columns:
+          - name: h3
+            data_tests: [unique, not_null]
+      - name: stan_dzienny
+        description: Liczba paczkomatow wg dnia, wojewodztwa (z API) i statusu (paczkomaty.zrzut).
+      - name: ludnosc_gus_powiaty
+        description: Ludnosc powiatow wg GUS (BDL, zmienna 72305, stan na 31 XII), do kalibracji Kontur.
