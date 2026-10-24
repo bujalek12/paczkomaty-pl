@@ -36,12 +36,13 @@ def _res8(df: pd.DataFrame) -> pd.Series:
 
 def agreguj_res8(heksagony_res9: pd.DataFrame, paczkomaty: pd.DataFrame, konkurencja: pd.DataFrame) -> pd.DataFrame:
     """Jeden wiersz na szesciokat res 8: ludnosc, ludnosc w zasiegu 500 m / 1 km, liczby automatow."""
-    res9 = heksagony_res9.assign(rodzic=[h3.cell_to_parent(c, 8) for c in heksagony_res9["h3"]])
-    ludnosc = res9.groupby("rodzic").agg(
-        ludnosc=("ludnosc", "sum"),
-        ludnosc_500m=("ludnosc", lambda s: s[res9.loc[s.index, "odl_m"] <= 500].sum()),
-        ludnosc_1km=("ludnosc", lambda s: s[res9.loc[s.index, "odl_m"] <= 1000].sum()),
+    # wektorowo: ludnosc "w zasiegu" jako osobne kolumny, potem jedno sumowanie w grupach
+    res9 = heksagony_res9.assign(
+        rodzic=[h3.cell_to_parent(c, 8) for c in heksagony_res9["h3"]],
+        ludnosc_500m=heksagony_res9["ludnosc"].where(heksagony_res9["odl_m"] <= 500, 0.0),
+        ludnosc_1km=heksagony_res9["ludnosc"].where(heksagony_res9["odl_m"] <= 1000, 0.0),
     )
+    ludnosc = res9.groupby("rodzic")[["ludnosc", "ludnosc_500m", "ludnosc_1km"]].sum()
 
     p = paczkomaty.assign(h3=_res8(paczkomaty))
     inpost = pd.DataFrame({
