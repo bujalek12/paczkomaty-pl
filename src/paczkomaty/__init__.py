@@ -1,0 +1,1 @@
+"""Dostepnosc paczkomatow w Polsce."""
