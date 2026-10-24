@@ -11,7 +11,7 @@ from paczkomaty.widoki import (
     OPERATORZY, SUMOWANE, TYPY_ZABUDOWY, do_rozdzielczosci, dodaj_udzial, klasa_zasiegu, konkurencja_wg_operatora,
     pokrycie_wg_typu, w_promieniu,
 )
-from wspolne import agregaty, liczba, motyw, procent
+from wspolne import agregaty, legenda, liczba, motyw, procent, rgb, slupki
 
 m = motyw()
 dane = dodaj_udzial(agregaty())
@@ -24,30 +24,10 @@ MIASTA = {
 INPOST_OSM = 21_439  # paczkomaty InPost zapisane w OpenStreetMap (notebook 01), do oceny kompletnosci OSM
 
 
-def rgb(hex_kolor: str, alfa: int = 220) -> list[int]:
-    return [int(hex_kolor[i : i + 2], 16) for i in (1, 3, 5)] + [alfa]
-
-
 def krycie(ludnosc, pelne_od: float) -> list[int]:
     """Przezroczystosc wg liczby mieszkancow (skala log): pusta wies blada, gesto zaludnione miejsca wyrazne."""
     t = np.clip((np.log10(np.maximum(ludnosc, 1)) - 1) / (np.log10(pelne_od) - 1), 0, 1)  # od 10 os.
     return list((30 + 210 * t).astype(int))
-
-
-def legenda(pozycje: list[tuple[str, str]]) -> None:
-    kafelki = "".join(f'<span><i class="pole" style="background:{k}"></i>{opis}</span>' for k, opis in pozycje)
-    st.markdown(f'<div class="legenda">{kafelki}</div>', unsafe_allow_html=True)
-
-
-def slupki(wiersze: list[tuple[str, str, float, str, str]]) -> None:
-    """Poziome paski: (etykieta, podpis, dlugosc 0-1, kolor, wartosc)."""
-    html = "".join(
-        f'<div>{etykieta}<small>{podpis}</small></div>'
-        f'<div class="tlo-paska"><div class="pasek" style="width:{dl * 100:.1f}%;background:{kolor}"></div></div>'
-        f'<div class="wart">{wartosc}</div>'
-        for etykieta, podpis, dl, kolor, wartosc in wiersze
-    )
-    st.markdown(f'<div class="slupki">{html}</div>', unsafe_allow_html=True)
 
 
 # --- Teza i liczby ------------------------------------------------------------------------
@@ -239,7 +219,7 @@ for tytul, tekst in [
 
 st.markdown(
     '<p class="przypis">Projekt niezależny, niezwiązany z InPost. Źródła: publiczna mapa punktów InPost '
-    "(agregaty na sześciokąt), Kontur Population (CC BY 4.0), © współtwórcy OpenStreetMap (ODbL). "
-    "Ludność wg Kontur jest zawyżona względem GUS, dlatego podaję udziały procentowe.</p>",
+    "(agregaty na sześciokąt), Kontur Population (CC BY 4.0) skalibrowana do liczby mieszkańców powiatów "
+    "wg GUS (2025), © współtwórcy OpenStreetMap (ODbL).</p>",
     unsafe_allow_html=True,
 )

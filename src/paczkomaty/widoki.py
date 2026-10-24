@@ -76,3 +76,15 @@ def konkurencja_wg_operatora(agregaty: pd.DataFrame) -> pd.DataFrame:
     })
     wynik["udzial_bez_inpost"] = [_udzial(b, a) for b, a in zip(wynik["bez_inpost"], wynik["automaty"])]
     return wynik.sort_values("automaty", ascending=False, kind="stable").reset_index(drop=True)
+
+
+def ponizej_oczekiwan(powiaty: pd.DataFrame, n: int = 10) -> pd.DataFrame:
+    """Powiaty z zasiegiem najbardziej ponizej tego, czego mozna sie spodziewac po ich urbanizacji.
+
+    Zasieg 500 m prawie w calosci wyjasnia udzial ludnosci miejskiej (prosta regresja liniowa);
+    duza ujemna roznica = mniej paczkomatow, niz maja podobnie zurbanizowane powiaty.
+    """
+    a, b = np.polyfit(powiaty["udzial_miejski"], powiaty["udzial_500m"], 1)
+    wynik = powiaty.assign(oczekiwany_500m=a * powiaty["udzial_miejski"] + b)
+    wynik["roznica"] = wynik["udzial_500m"] - wynik["oczekiwany_500m"]
+    return wynik.nsmallest(n, "roznica").reset_index(drop=True)

@@ -17,6 +17,7 @@ st.set_page_config(page_title="Zasięg paczkomatów", layout="wide", initial_sid
 
 strony = [
     st.Page("strony/mapa.py", title="Mapa", default=True),
+    st.Page("strony/regiony.py", title="Regiony", url_path="regiony"),
 ]
 nawigacja = st.navigation(strony, position="hidden")  # wlasny pasek u gory zamiast menu bocznego
 naglowek(strony)

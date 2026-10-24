@@ -38,6 +38,11 @@ models:
       - name: wspolczynnik_kalibracji
         description: Ludnosc GUS / ludnosc Kontur w powiecie. Brak = powiat bez dopasowania w danych GUS.
         data_tests: [not_null]
+      - name: dane_niepewne
+        description: >
+          Kontur i GUS roznia sie wiecej niz 2 razy (pary miasto + powiat ziemski). Suma mieszkancow jest
+          poprawna, ale ich rozklad w powiecie, a wiec i udzial miejski, sa niepewne.
+        data_tests: [not_null]
 
   - name: wojewodztwa
     description: Dostepnosc paczkomatow w 16 wojewodztwach i kontrola zgodnosci z polem "province" z API.

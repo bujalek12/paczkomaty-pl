@@ -13,6 +13,10 @@ vars:
   # musza byc zgodne z TYPY_ZABUDOWY i POWIERZCHNIA_RES8_KM2 w src/paczkomaty/widoki.py (pilnuje tego test)
   powierzchnia_res8_km2: 0.737
   progi_gestosci: [50, 500, 2000]   # os./km2: rozproszona | wies i przedmiescia | male miasta | miasta
+  # GUS / Kontur: powyzej 2 = miasto, z ktorego Kontur przesunal mieszkancow; ponizej 0,7 i obok takiego
+  # miasta = powiat ziemski, do ktorego trafili. Kalibracja naprawia sume, ale rozklad w obu jest niepewny.
+  # (W pozostalych powiatach wspolczynnik to 0,84-0,91: Kontur zawyza ludnosc o ok. 13%.)
+  zakres_kalibracji: [0.7, 2.0]
 
 models:
   paczkomaty:

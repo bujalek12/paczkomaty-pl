@@ -16,24 +16,26 @@ from paczkomaty.http import pobierz
 _BAZA = "https://raw.githubusercontent.com/ppatrzyk/polska-geojson/74a22f97cf822aa1cb49802c1700ccb8b6340eca"
 URL_POWIATY = f"{_BAZA}/powiaty/powiaty-medium.geojson"
 URL_WOJEWODZTWA = f"{_BAZA}/wojewodztwa/wojewodztwa-medium.geojson"
+URL_POWIATY_MAPA = f"{_BAZA}/powiaty/powiaty-min.geojson"  # mocno uproszczone (0,4 MB), tylko do rysowania
 ZMIANY_NAZW = {"powiat jeleniogórski": "powiat karkonoski"}  # granice sprzed zmiany nazwy w 2021 r.
 MAX_PIERSCIEN = 3  # komorki przygraniczne: szukamy regionu u sasiadow do 3 pierscieni H3 (ok. 2 km przy res 8)
 
 
 def pobierz_granice(katalog: Path, klient: httpx.Client | None = None) -> tuple[Path, Path]:
-    """Pobiera oba pliki GeoJSON (tylko gdy ich brak). Zwraca (powiaty, wojewodztwa)."""
+    """Pobiera pliki GeoJSON (tylko gdy ich brak). Zwraca (powiaty, wojewodztwa); obok lezy powiaty_mapa.geojson."""
     katalog.mkdir(parents=True, exist_ok=True)
-    pliki = (katalog / "powiaty.geojson", katalog / "wojewodztwa.geojson")
+    pliki = {URL_POWIATY: katalog / "powiaty.geojson", URL_WOJEWODZTWA: katalog / "wojewodztwa.geojson",
+             URL_POWIATY_MAPA: katalog / "powiaty_mapa.geojson"}
     wlasny = klient is None
     klient = klient or httpx.Client(timeout=120, follow_redirects=True)
     try:
-        for url, plik in zip((URL_POWIATY, URL_WOJEWODZTWA), pliki):
+        for url, plik in pliki.items():
             if not plik.exists():
                 plik.write_bytes(pobierz(klient, url).content)
     finally:
         if wlasny:
             klient.close()
-    return pliki
+    return pliki[URL_POWIATY], pliki[URL_WOJEWODZTWA]
 
 
 def nazwa_powiatu(nazwa: str) -> str:
@@ -76,3 +78,15 @@ def przypisz_regiony(komorki: list[str], powiaty_geo: dict, wojewodztwa_geo: dic
         "powiat": [nazwy_pow.get(i) for i in ids],
         "wojewodztwo": [woj_powiatu.get(i) for i in ids],
     })
+
+
+def sasiedzi_powiatow(regiony: pd.DataFrame) -> pd.DataFrame:
+    """Pary sasiadujacych powiatow (w obie strony): komorki H3 stykajace sie przez granice powiatu."""
+    powiat = dict(zip(regiony["h3"], regiony["powiat_id"]))
+    pary = {
+        (p, powiat[s])
+        for c, p in powiat.items() if pd.notna(p)
+        for s in h3.grid_ring(c, 1)
+        if s in powiat and pd.notna(powiat[s]) and powiat[s] != p
+    }
+    return pd.DataFrame(sorted(pary), columns=["powiat_id", "sasiad_id"]).astype("Int64")

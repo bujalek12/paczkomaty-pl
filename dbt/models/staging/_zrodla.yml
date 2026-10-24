@@ -22,3 +22,5 @@ sources:
         description: Liczba paczkomatow wg dnia, wojewodztwa (z API) i statusu (paczkomaty.zrzut).
       - name: ludnosc_gus_powiaty
         description: Ludnosc powiatow wg GUS (BDL, zmienna 72305, stan na 31 XII), do kalibracji Kontur.
+      - name: sasiedzi_powiatow
+        description: Pary stykajacych sie powiatow (w obie strony), z komorek H3 na granicy.

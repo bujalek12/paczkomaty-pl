@@ -17,3 +17,8 @@ jobs:
       - run: uv sync --locked
       - name: Testy (pytest)
         run: uv run pytest -q
+      - name: Walidacja projektu dbt (bez danych)
+        working-directory: dbt
+        env:
+          PACZKOMATY_BAZA: /tmp/pusta.duckdb
+        run: uv run dbt parse --profiles-dir .

@@ -1,12 +1,15 @@
 """Elementy wspolne dla stron aplikacji: motyw, naglowek, formatowanie, odczyt agregatow."""
 
+import json
 from pathlib import Path
 
 import pandas as pd
 import streamlit as st
 
 PROJEKT = Path(__file__).resolve().parents[1]
-AGREGATY = PROJEKT / "data" / "agregaty" / "heksagony_res8.parquet"
+AGREGATY = PROJEKT / "data" / "agregaty"
+KOLUMNY_MAPY = ["h3", "ludnosc", "ludnosc_500m", "ludnosc_1km", "inpost", "inpost_w_budowie", "allegro_one_box",
+                "orlen_paczka", "dpd", "dhl", "pocztex", "lat", "lon"]
 REPO = "https://github.com/bujalek12/paczkomaty-pl"
 
 # Te same motywy co w projekcie energii (palety sprawdzone pod daltonizm i kontrast z tlem).
@@ -32,8 +35,32 @@ def liczba(x: float) -> str:
     return f"{x:,.0f}".replace(",", "\u202f")
 
 
+def dziesietna(x: float, miejsca: int = 1) -> str:
+    return f"{x:.{miejsca}f}".replace(".", ",")
+
+
 def procent(x: float, miejsca: int = 0) -> str:
     return f"{x:.{miejsca}%}".replace(".", ",")
+
+
+def rgb(hex_kolor: str, alfa: int = 220) -> list[int]:
+    return [int(hex_kolor[i : i + 2], 16) for i in (1, 3, 5)] + [alfa]
+
+
+def legenda(pozycje: list[tuple[str, str]]) -> None:
+    kafelki = "".join(f'<span><i class="pole" style="background:{k}"></i>{opis}</span>' for k, opis in pozycje)
+    st.markdown(f'<div class="legenda">{kafelki}</div>', unsafe_allow_html=True)
+
+
+def slupki(wiersze: list[tuple[str, str, float, str, str]]) -> None:
+    """Poziome paski: (etykieta, podpis, dlugosc 0-1, kolor, wartosc)."""
+    html = "".join(
+        f'<div>{etykieta}<small>{podpis}</small></div>'
+        f'<div class="tlo-paska"><div class="pasek" style="width:{dl * 100:.1f}%;background:{kolor}"></div></div>'
+        f'<div class="wart">{wartosc}</div>'
+        for etykieta, podpis, dl, kolor, wartosc in wiersze
+    )
+    st.markdown(f'<div class="slupki">{html}</div>', unsafe_allow_html=True)
 
 
 def motyw() -> dict:
@@ -155,9 +182,31 @@ def komunikat(tytul: str, tresc: str) -> None:
     st.stop()
 
 
+def _wymagany(nazwa: str) -> Path:
+    plik = AGREGATY / nazwa
+    if not plik.exists():
+        komunikat("Brak danych.", f"Brak pliku <code>data/agregaty/{nazwa}</code>. Uruchom "
+                  "<code>uv run python -m paczkomaty.hurtownia</code>.")
+    return plik
+
+
 @st.cache_data(show_spinner=False)
 def agregaty() -> pd.DataFrame:
-    """Liczby na szesciokat res 8 (bez pojedynczych punktow z API)."""
-    if not AGREGATY.exists():
-        komunikat("Brak danych.", "Uruchom notebook <code>notebooks/01_eksploracja</code>, który zapisuje agregaty.")
-    return pd.read_parquet(AGREGATY)
+    """Szesciokaty res 8 z hurtowni (ludnosc skalibrowana do GUS), bez pojedynczych punktow z API."""
+    return pd.read_parquet(_wymagany("heksagony.parquet"), columns=KOLUMNY_MAPY)
+
+
+@st.cache_data(show_spinner=False)
+def powiaty() -> pd.DataFrame:
+    return pd.read_parquet(_wymagany("powiaty.parquet"))
+
+
+@st.cache_data(show_spinner=False)
+def wojewodztwa() -> pd.DataFrame:
+    return pd.read_parquet(_wymagany("wojewodztwa.parquet"))
+
+
+@st.cache_data(show_spinner=False)
+def mapa_powiatow() -> dict:
+    """Uproszczone granice powiatow (tylko do rysowania), klucz properties.id = powiat_id."""
+    return json.loads(_wymagany("powiaty_mapa.geojson").read_text())

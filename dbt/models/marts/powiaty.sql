@@ -33,5 +33,13 @@ select
     automaty_konkurencji,
     paczkomaty / ludnosc * 10000                            as paczkomaty_na_10_tys,
     wspolczynnik_kalibracji,
+    -- miasto, z ktorego Kontur "wyprowadzil" mieszkancow, i powiat ziemski wokol niego, do ktorego trafili
+    wspolczynnik_kalibracji > {{ var('zakres_kalibracji')[1] }}
+        or (wspolczynnik_kalibracji < {{ var('zakres_kalibracji')[0] }} and powiat_id in (
+            select s.powiat_id
+            from {{ source('agregaty', 'sasiedzi_powiatow') }} as s
+            join powiaty as miasto on miasto.powiat_id = s.sasiad_id
+            where miasto.wspolczynnik_kalibracji > {{ var('zakres_kalibracji')[1] }}
+        ))                                                  as dane_niepewne,
     rank() over (order by ludnosc_500m / ludnosc desc)      as miejsce_w_kraju
 from powiaty

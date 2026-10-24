@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from paczkomaty.widoki import (
-    do_rozdzielczosci, klasa_zasiegu, konkurencja_wg_operatora, pokrycie_wg_typu, w_promieniu,
+    do_rozdzielczosci, klasa_zasiegu, konkurencja_wg_operatora, pokrycie_wg_typu, ponizej_oczekiwan, w_promieniu,
 )
 
 RODZIC7 = h3.cell_to_parent("881f1d4815fffff", 7)
@@ -78,3 +78,15 @@ def test_konkurencja_wg_operatora():
     assert wynik.loc["Allegro One Box", "bez_inpost"] == 3  # drugi szesciokat nie ma InPost
     assert wynik.loc["DPD", "udzial_bez_inpost"] == 0
     assert wynik.loc["Pocztex", "udzial_bez_inpost"] == 0  # 0 automatow: bez dzielenia przez zero
+
+
+def test_powiaty_ponizej_oczekiwan_wzgledem_urbanizacji():
+    # zasieg = 0,1 + 0,8 * udzial miejski, poza powiatem C, ktory ma o 0,2 mniej, niz wynika z urbanizacji
+    powiaty = pd.DataFrame({"nazwa": ["A", "B", "C", "D", "E"], "udzial_miejski": [0.0, 0.25, 0.5, 0.75, 1.0]})
+    powiaty["udzial_500m"] = 0.1 + 0.8 * powiaty["udzial_miejski"] - [0, 0, 0.2, 0, 0]
+
+    wynik = ponizej_oczekiwan(powiaty, n=2)
+
+    assert wynik["nazwa"].iloc[0] == "C"
+    assert wynik["roznica"].iloc[0] < -0.1
+    assert len(wynik) == 2 and {"oczekiwany_500m", "roznica"} <= set(wynik.columns)

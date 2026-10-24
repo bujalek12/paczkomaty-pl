@@ -3,7 +3,9 @@
 import h3
 import httpx
 
-from paczkomaty.granice import nazwa_powiatu, pobierz_granice, przypisz_regiony
+import pandas as pd
+
+from paczkomaty.granice import nazwa_powiatu, pobierz_granice, przypisz_regiony, sasiedzi_powiatow
 
 
 def kwadrat(lon0, lat0, lon1, lat1, **wlasciwosci):
@@ -61,4 +63,16 @@ def test_nie_pobiera_drugi_raz(tmp_path):
     pobierz_granice(tmp_path, klient=klient)
     pobierz_granice(tmp_path, klient=klient)
 
-    assert len(zapytania) == 2  # dwa pliki, tylko za pierwszym razem
+    assert len(zapytania) == 3  # powiaty, wojewodztwa i lekka mapa powiatow; tylko za pierwszym razem
+    assert (tmp_path / "powiaty_mapa.geojson").exists()
+
+
+def test_sasiedzi_powiatow_z_komorek_na_granicy():
+    zachod = h3.latlng_to_cell(52.05, 20.95, 8)
+    sasiad = next(s for s in h3.grid_ring(zachod, 1))
+    daleko = h3.latlng_to_cell(54.0, 18.0, 8)
+    regiony = pd.DataFrame({"h3": [zachod, sasiad, daleko], "powiat_id": pd.array([1, 2, 3], dtype="Int64")})
+
+    wynik = sasiedzi_powiatow(regiony)
+
+    assert sorted(map(tuple, wynik[["powiat_id", "sasiad_id"]].to_numpy().tolist())) == [(1, 2), (2, 1)]

@@ -5,6 +5,7 @@ Wymaga data/agregaty/heksagony_res8.parquet (notebook 01) i stan_dzienny.parquet
 """
 
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -12,7 +13,7 @@ from pathlib import Path
 import pandas as pd
 
 from paczkomaty.eksport import eksportuj
-from paczkomaty.granice import pobierz_granice, przypisz_regiony
+from paczkomaty.granice import pobierz_granice, przypisz_regiony, sasiedzi_powiatow
 from paczkomaty.gus import ROK, pobierz_ludnosc_powiatow
 
 PROJEKT = Path(__file__).resolve().parents[2]
@@ -20,12 +21,14 @@ DANE = PROJEKT / "data"
 
 
 def zbuduj_regiony(dane: Path = DANE) -> Path:
-    """Powiat i wojewodztwo dla kazdego szesciokata z agregatow -> agregaty/regiony_heksagonow.parquet."""
+    """Powiat i wojewodztwo dla kazdego szesciokata -> agregaty/regiony_heksagonow.parquet
+    (obok sasiedzi_powiatow.parquet: pary powiatow, ktore sie stykaja)."""
     powiaty, wojewodztwa = pobierz_granice(dane / "granice")
     komorki = pd.read_parquet(dane / "agregaty" / "heksagony_res8.parquet", columns=["h3"])["h3"].tolist()
     regiony = przypisz_regiony(komorki, json.loads(powiaty.read_text()), json.loads(wojewodztwa.read_text()))
     plik = dane / "agregaty" / "regiony_heksagonow.parquet"
     regiony.to_parquet(plik, index=False)
+    sasiedzi_powiatow(regiony).to_parquet(dane / "agregaty" / "sasiedzi_powiatow.parquet", index=False)
     return plik
 
 
@@ -46,6 +49,8 @@ def main() -> None:
     subprocess.run(["dbt", "build", "--profiles-dir", "."], cwd=PROJEKT / "dbt", check=True)
     for plik in eksportuj():
         print(f"{plik.relative_to(PROJEKT)}  {plik.stat().st_size / 1e3:.0f} kB")
+    # lekkie granice powiatow do rysowania mapy w aplikacji (aplikacja czyta tylko data/agregaty)
+    shutil.copy(DANE / "granice" / "powiaty_mapa.geojson", DANE / "agregaty" / "powiaty_mapa.geojson")
 
 
 if __name__ == "__main__":

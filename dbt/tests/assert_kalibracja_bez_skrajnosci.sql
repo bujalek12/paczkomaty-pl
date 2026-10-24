@@ -1,7 +1,7 @@
--- Ostrzezenie: powiaty, w ktorych Kontur rozni sie od GUS wiecej niz 2 razy. Zwykle to miasta, z ktorych
+-- Ostrzezenie: powiaty z niepewnym rozkladem ludnosci (pary miasto + powiat ziemski, patrz powiaty.sql). Zwykle to miasta, z ktorych
 -- Kontur "wyprowadzil" mieszkancow do sasiedniego powiatu ziemskiego (np. Elblag, Wloclawek, Suwalki).
--- Kalibracja to naprawia, ale warto wiedziec, gdzie byla potrzebna.
+-- Kalibracja naprawia sume, ale warto wiedziec, gdzie byla potrzebna (kolumna dane_niepewne).
 {{ config(severity='warn') }}
 select nazwa, ludnosc, wspolczynnik_kalibracji
 from {{ ref('powiaty') }}
-where wspolczynnik_kalibracji > 2 or wspolczynnik_kalibracji < 0.5
+where dane_niepewne
