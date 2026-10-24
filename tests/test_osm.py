@@ -39,3 +39,22 @@ def test_ramka_z_odpowiedzi_overpass():
         {"lat": 52.2, "lon": 21.0, "operator": "Orlen Paczka"},
         {"lat": 50.1, "lon": 19.9, "operator": "DPD"},
     ]
+
+
+def test_zapytanie_zwraca_wspolrzedne():
+    # "out tags" zwraca same tagi, bez lat/lon: mapa bylaby pusta
+    from paczkomaty.osm import ZAPYTANIE
+
+    assert "out tags" not in ZAPYTANIE
+
+
+def test_wezel_bez_wspolrzednych_jest_pomijany():
+    def obsluga(zadanie):
+        return httpx.Response(200, json={"elements": [
+            {"type": "node", "tags": {"brand": "DPD"}},
+            {"type": "node", "lat": 50.1, "lon": 19.9, "tags": {"brand": "DHL"}},
+        ]})
+
+    df = pobierz_automaty_osm(klient=httpx.Client(transport=httpx.MockTransport(obsluga)))
+
+    assert list(df["operator"]) == ["DHL"]

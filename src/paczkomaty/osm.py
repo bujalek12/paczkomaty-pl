@@ -14,7 +14,7 @@ ZAPYTANIE = """
 [out:json][timeout:180];
 area["ISO3166-1"="PL"][admin_level=2]->.pl;
 node["amenity"="parcel_locker"](area.pl);
-out tags;
+out;
 """
 # kolejnosc ma znaczenie: pierwsze dopasowanie wygrywa
 OPERATORZY = [
@@ -46,6 +46,6 @@ def pobierz_automaty_osm(klient: httpx.Client | None = None) -> pd.DataFrame:
             klient.close()
     return pd.DataFrame(
         [{"lat": e["lat"], "lon": e["lon"], "operator": normalizuj_operatora(e.get("tags", {}))}
-         for e in dane["elements"] if e.get("type") == "node"],
+         for e in dane["elements"] if e.get("type") == "node" and "lat" in e and "lon" in e],
         columns=["lat", "lon", "operator"],
     )
