@@ -13,7 +13,7 @@ import httpx
 
 from paczkomaty.http import pobierz
 
-URL = "https://github.com/bujalek12/paczkomaty-pl/releases/download/dane"
+URL = "https://github.com/maciej-bujalski/paczkomaty-pl/releases/download/dane"
 PLIKI = [
     "heksagony.parquet", "powiaty.parquet", "wojewodztwa.parquet", "powiaty_mapa.geojson",
     "model_heksagony.parquet", "metryki_modelu.json", "rekomendacje.parquet", "walidacja_lokalizacji.json",

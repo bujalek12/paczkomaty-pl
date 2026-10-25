@@ -16,7 +16,7 @@ permissions:
   contents: write          # zapis agregatow do wydania "dane" w tym repo
 
 env:
-  DANE_REPO: bujalek12/paczkomaty-dane
+  DANE_REPO: maciej-bujalski/paczkomaty-dane
 
 jobs:
   zrzut:

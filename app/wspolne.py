@@ -15,7 +15,7 @@ MIASTA = {
 }
 KOLUMNY_MAPY = ["h3", "ludnosc", "ludnosc_500m", "ludnosc_1km", "inpost", "inpost_w_budowie", "allegro_one_box",
                 "orlen_paczka", "dpd", "dhl", "pocztex", "lat", "lon"]
-REPO = "https://github.com/bujalek12/paczkomaty-pl"
+REPO = "https://github.com/maciej-bujalski/paczkomaty-pl"
 
 # Te same motywy co w projekcie energii (palety sprawdzone pod daltonizm i kontrast z tlem).
 MOTYWY = {
