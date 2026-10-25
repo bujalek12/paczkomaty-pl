@@ -31,3 +31,11 @@ def test_zachlannie_wybiera_najwiecej_niepokrytych_i_nie_liczy_dwa_razy():
 
 def test_trafienia_odsetek_punktow_blisko_wybranych():
     assert trafienia(LAT[[0, 4]], LON[[0, 4]], LAT[[1]], LON[[1]], 500) == pytest.approx(0.5)
+
+
+def test_objeci_mieszkancy_liczeni_raz():
+    from paczkomaty.optymalizacja import objeci_mieszkancy
+    ludnosc = np.array([100.0, 50.0, 0.0, 20.0, 5.0])
+
+    # miejsca w punktach 0 i 1: obejmuja 0, 1, 2 (punkt 1 i 0 tylko raz)
+    assert objeci_mieszkancy(LAT, LON, ludnosc, LAT[[0, 1]], LON[[0, 1]], 500) == 150

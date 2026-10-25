@@ -47,3 +47,10 @@ def trafienia(cel_lat, cel_lon, wybrane_lat, wybrane_lon, promien_m: float = 500
     odleglosci = odleglosc_do_najblizszego(np.asarray(cel_lat), np.asarray(cel_lon),
                                           np.asarray(wybrane_lat), np.asarray(wybrane_lon))
     return float((odleglosci <= promien_m).mean())
+
+
+def objeci_mieszkancy(lat, lon, ludnosc, wybrane_lat, wybrane_lon, promien_m: float = 500) -> float:
+    """Ilu mieszkancow (z podanych punktow) ma ktores z wybranych miejsc w promieniu; kazdy liczony raz."""
+    odleglosci = odleglosc_do_najblizszego(np.asarray(lat), np.asarray(lon),
+                                          np.asarray(wybrane_lat), np.asarray(wybrane_lon))
+    return float(np.asarray(ludnosc)[odleglosci <= promien_m].sum())
