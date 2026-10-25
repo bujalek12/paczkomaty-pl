@@ -59,7 +59,7 @@ mieszkańców każdego powiatu biorę z Banku Danych Lokalnych GUS (2025), a Kon
 uv sync
 uv run jupytext --to notebook --execute notebooks/01_eksploracja.py   # pobiera dane i zapisuje agregaty
 uv run python -m paczkomaty.zrzut        # stan sieci dzisiaj
-uv run python -m paczkomaty.hurtownia    # regiony, GUS, dbt build, eksport
+uv run python -m paczkomaty.pipeline     # zasięg, hurtownia dbt, model, lokalizacje (ok. 3 min)
 uv run streamlit run app/app.py
 uv run pytest
 ```
@@ -73,6 +73,12 @@ dbt + DuckDB: `staging` (cienkie widoki na pliki Parquet) i `marts` (`heksagony`
 37 testów, m.in.: 380 powiatów i 16 województw, suma ludności po kalibracji równa GUS, agregacja nie gubi ludzi,
 udziały w przedziale 0–1, liczba paczkomatów policzona ze współrzędnych zgodna z polem „województwo” z API
 (różnica poniżej 0,2% w każdym województwie).
+
+## Automatyzacja
+
+Workflow `zrzut` (GitHub Actions) codziennie: zrzut sieci → historia zmian → zasięg → hurtownia dbt (37 testów)
+→ model → lokalizacje → agregaty do wydania `dane`, z którego czyta aplikacja. Źródła zmieniające się rzadko
+(ludność Kontur, OSM) są w prywatnym repo z danymi; OSM odświeżany co tydzień, żeby nie obciążać Overpass.
 
 ## Historia sieci
 
