@@ -226,3 +226,14 @@ def model_heksagony() -> pd.DataFrame:
 @st.cache_data(show_spinner=False)
 def metryki_modelu() -> dict:
     return json.loads(_wymagany("metryki_modelu.json").read_text())
+
+
+@st.cache_data(show_spinner=False)
+def rekomendacje() -> pd.DataFrame:
+    """Kolejne miejsca z optymalizacji (paczkomaty.lokalizacje), dwa warianty: z_modelem i ludnosc."""
+    return pd.read_parquet(_wymagany("rekomendacje.parquet"))
+
+
+@st.cache_data(show_spinner=False)
+def walidacja_lokalizacji() -> dict:
+    return json.loads(_wymagany("walidacja_lokalizacji.json").read_text())

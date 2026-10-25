@@ -46,6 +46,7 @@ mieszkańców każdego powiatu biorę z Banku Danych Lokalnych GUS (2025), a Kon
 | `app/` | aplikacja Streamlit z interaktywną mapą (pydeck, warstwa H3) |
 | `src/paczkomaty/zrzut.py`, `historia.py` | codzienny zrzut sieci i historia zmian (nowe, usunięte, zmiana statusu) |
 | `src/paczkomaty/granice.py`, `gus.py`, `hurtownia.py` | przypisanie sześciokątów do powiatów, ludność z GUS, budowa hurtowni |
+| `src/paczkomaty/optymalizacja.py`, `lokalizacje.py` | wybór nowych lokalizacji i walidacja na paczkomatach w budowie |
 | `src/paczkomaty/cechy.py`, `model.py` | cechy i model zapotrzebowania (LightGBM, walidacja przestrzenna, SHAP) |
 | `dbt/` | hurtownia (DuckDB): sześciokąty, powiaty, województwa, testy jakości danych |
 | `powerbi/dane/` | tabele dla Power BI (Parquet) |
@@ -95,10 +96,24 @@ Losowy podział daje 78,7%, czyli przeciek przestrzenny jest pomijalny (cechy lo
 Największe braki względem modelu: Świnoujście (23 paczkomaty, model: 42), Świętochłowice (22 / 39),
 powiat bielski w podlaskim (30 / 45). Automaty konkurencji prawie nic nie wnoszą do modelu (SHAP).
 
-## Dalej
+## Gdzie postawić kolejne paczkomaty
 
-Wybór nowych lokalizacji maksymalizujący liczbę obsłużonych mieszkańców i porównanie rekomendacji
-z paczkomatami, które są właśnie w budowie.
+Zachłanne maksymalne pokrycie (`optymalizacja.py`): kolejno wybieram miejsce (sześciokąt res 9), które obejmie
+w 500 m najwięcej mieszkańców bez paczkomatu. 500 takich miejsc dałoby paczkomat w 500 m kolejnym 0,95 mln osób.
+
+**Sprawdzenie na decyzjach InPostu:** jaki odsetek z 920 paczkomatów w budowie (status, który nie wchodził
+ani do modelu, ani do optymalizacji) leży w 500 m od proponowanych miejsc.
+
+| ranking miejsc | top 500 | top 2000 | nowi mieszkańcy (top 2000) |
+|---|---|---|---|
+| optymalizacja: mieszkańcy ważeni modelem | 1,7% | 4,9% | 1,27 mln |
+| optymalizacja: najwięcej mieszkańców | 0,8% | 3,5% | 2,44 mln |
+| największe braki według modelu | **6,5%** | **16,3%** | 0,72 mln |
+| losowe miejsca | 0,1% | 0,2% | 0,11 mln |
+
+Tylko 23% budowanych paczkomatów powstaje tam, gdzie dziś nie ma paczkomatu w 500 m: **InPost głównie zagęszcza
+sieć**. Dlatego najlepiej trafia ranking braków z modelu (97 razy częściej niż losowo), a optymalizacja zasięgu
+pokazuje inną strategię: więcej nowych klientów zamiast obsługi miejsc, gdzie popyt już jest.
 
 ## Źródła danych
 

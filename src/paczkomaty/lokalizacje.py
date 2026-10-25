@@ -44,7 +44,7 @@ def main() -> None:
     A = macierz_zasiegu(niepokryte["lat"].to_numpy(), niepokryte["lon"].to_numpy(), PROMIEN_M)
     kmax = max(K)
     a, zysk_a = zachlannie(A, niepokryte["waga_model"].to_numpy(), kmax)
-    b, _ = zachlannie(A, niepokryte["ludnosc"].to_numpy(), kmax)
+    b, zysk_b = zachlannie(A, niepokryte["ludnosc"].to_numpy(), kmax)
     braki = model.sort_values("niedosycenie", ascending=False).head(kmax)
     c_lat, c_lon = zip(*(h3.cell_to_latlng(x) for x in braki["h3"]))
     rankingi = {
@@ -78,8 +78,12 @@ def main() -> None:
         "w_budowie_poza_zasiegiem_500m": float((odl_budowa > PROMIEN_M).mean()),  # gorna granica trafien (a), (b), (d)
         "niepokryci_mieszkancy": float(niepokryte["ludnosc"].sum()), "kandydatow": len(niepokryte),
     }
-    wybrane = niepokryte.iloc[a][["h3", "rodzic", "lat", "lon", "ludnosc"]].assign(
-        kolejnosc=np.arange(1, len(a) + 1), zysk_model=zysk_a)
+    # kolejne miejsca obu optymalizacji; zysk = waga nowo objetych punktow (przewidywane paczkomaty albo mieszkancy)
+    wybrane = pd.concat([
+        niepokryte.iloc[idx][["h3", "rodzic", "lat", "lon"]].assign(ranking=nazwa, kolejnosc=np.arange(1, len(idx) + 1),
+                                                                   zysk=zysk)
+        for nazwa, idx, zysk in [("z_modelem", a, zysk_a), ("ludnosc", b, zysk_b)]
+    ], ignore_index=True)
     wybrane.to_parquet(AGREGATY / "rekomendacje.parquet", index=False)
     wynik = {"kontekst": kontekst, "rankingi": wyniki}
     (AGREGATY / "walidacja_lokalizacji.json").write_text(json.dumps(wynik, indent=2, ensure_ascii=False))
