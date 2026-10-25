@@ -4,6 +4,8 @@ Ilu mieszkańców ma paczkomat w zasięgu krótkiego spaceru, gdzie są białe p
 Projekt łączy publiczną mapę punktów InPost, siatkę ludności Kontur (sześciokąty H3) i automaty innych operatorów
 z OpenStreetMap.
 
+**Aplikacja:** https://zasieg-paczkomatow.streamlit.app (dane aktualizowane codziennie)
+
 Projekt niezależny, niezwiązany z InPost ani innymi operatorami.
 
 ## Najważniejsze liczby (stan sieci z 24.10.2026)
@@ -107,7 +109,8 @@ powiat bielski w podlaskim (30 / 45). Automaty konkurencji prawie nic nie wnosz�
 Zachłanne maksymalne pokrycie (`optymalizacja.py`): kolejno wybieram miejsce (sześciokąt res 9), które obejmie
 w 500 m najwięcej mieszkańców bez paczkomatu. 500 takich miejsc dałoby paczkomat w 500 m kolejnym 0,95 mln osób.
 
-**Sprawdzenie na decyzjach InPostu:** jaki odsetek z 920 paczkomatów w budowie (status, który nie wchodził
+**Sprawdzenie na decyzjach InPostu** (zrzut z 24.10.2026; aplikacja pokazuje wyniki z bieżącego dnia):
+jaki odsetek z 920 paczkomatów w budowie (status, który nie wchodził
 ani do modelu, ani do optymalizacji) leży w 500 m od proponowanych miejsc.
 
 | ranking miejsc | top 500 | top 2000 | nowi mieszkańcy (top 2000) |
