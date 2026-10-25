@@ -3,7 +3,7 @@
 import httpx
 import pytest
 
-from paczkomaty.osm import normalizuj_operatora, pobierz_automaty_osm
+from paczkomaty.osm import normalizuj_operatora, pobierz_automaty_osm, pobierz_punkty_osm
 
 
 @pytest.mark.parametrize(("tagi", "operator"), [
@@ -58,3 +58,25 @@ def test_wezel_bez_wspolrzednych_jest_pomijany():
     df = pobierz_automaty_osm(klient=httpx.Client(transport=httpx.MockTransport(obsluga)))
 
     assert list(df["operator"]) == ["DHL"]
+
+
+def test_punkty_otoczenia_z_wezlow_i_obszarow():
+    odpowiedz = {"elements": [
+        {"type": "node", "lat": 52.1, "lon": 21.0, "tags": {"shop": "convenience", "brand": "Żabka"}},
+        {"type": "way", "center": {"lat": 52.2, "lon": 21.1}, "tags": {"shop": "supermarket"}},
+        {"type": "node", "lat": 52.3, "lon": 21.2, "tags": {"highway": "bus_stop"}},
+        {"type": "way", "center": {"lat": 52.4, "lon": 21.3}, "tags": {"amenity": "fuel"}},
+        {"type": "relation", "center": {"lat": 52.5, "lon": 21.4}, "tags": {"amenity": "school"}},
+        {"type": "way", "tags": {"amenity": "school"}},  # bez srodka: pomijany
+    ]}
+
+    def obsluga(zapytanie):
+        assert b"out+tags+center" in zapytanie.content  # obszary (way) potrzebuja srodka
+        return httpx.Response(200, json=odpowiedz)
+
+    df = pobierz_punkty_osm(klient=httpx.Client(transport=httpx.MockTransport(obsluga)))
+
+    assert df.to_dict("list") == {
+        "lat": [52.1, 52.2, 52.3, 52.4, 52.5], "lon": [21.0, 21.1, 21.2, 21.3, 21.4],
+        "rodzaj": ["sklep", "supermarket", "przystanek", "stacja_paliw", "szkola"],
+    }

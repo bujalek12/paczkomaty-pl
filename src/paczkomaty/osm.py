@@ -49,3 +49,41 @@ def pobierz_automaty_osm(klient: httpx.Client | None = None) -> pd.DataFrame:
          for e in dane["elements"] if e.get("type") == "node" and "lat" in e and "lon" in e],
         columns=["lat", "lon", "operator"],
     )
+
+
+# Punkty otoczenia do modelu zapotrzebowania: tam, gdzie ludzie robia zakupy, tankuja, czekaja na autobus.
+# nwr = wezly, linie i relacje (sklep bywa zaznaczony jako obrys budynku); "out tags center" daje srodek obrysu.
+ZAPYTANIE_PUNKTY = """
+[out:json][timeout:900];
+area["ISO3166-1"="PL"][admin_level=2]->.pl;
+(
+  nwr["shop"~"^(supermarket|convenience)$"](area.pl);
+  node["highway"="bus_stop"](area.pl);
+  nwr["amenity"~"^(fuel|school)$"](area.pl);
+);
+out tags center qt;
+"""
+RODZAJE = [("shop", "convenience", "sklep"), ("shop", "supermarket", "supermarket"),
+           ("highway", "bus_stop", "przystanek"), ("amenity", "fuel", "stacja_paliw"), ("amenity", "school", "szkola")]
+
+
+def _rodzaj(tagi: dict) -> str | None:
+    return next((rodzaj for klucz, wartosc, rodzaj in RODZAJE if tagi.get(klucz) == wartosc), None)
+
+
+def pobierz_punkty_osm(klient: httpx.Client | None = None) -> pd.DataFrame:
+    """Sklepy, supermarkety, przystanki, stacje paliw i szkoly w Polsce: kolumny lat, lon, rodzaj."""
+    wlasny = klient is None
+    klient = klient or httpx.Client(timeout=960, headers={"User-Agent": "paczkomaty-pl (analiza danych publicznych)"})
+    try:
+        dane = pobierz(klient, OVERPASS, metoda="POST", dane={"data": ZAPYTANIE_PUNKTY}).json()
+    finally:
+        if wlasny:
+            klient.close()
+    wiersze = []
+    for e in dane["elements"]:
+        polozenie = e if "lat" in e else e.get("center")
+        rodzaj = _rodzaj(e.get("tags", {}))
+        if polozenie and rodzaj:
+            wiersze.append({"lat": polozenie["lat"], "lon": polozenie["lon"], "rodzaj": rodzaj})
+    return pd.DataFrame(wiersze, columns=["lat", "lon", "rodzaj"])
