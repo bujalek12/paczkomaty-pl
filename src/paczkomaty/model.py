@@ -45,3 +45,46 @@ def waliduj(X: pd.DataFrame, y: np.ndarray, grupy: np.ndarray, ludnosc: np.ndarr
         oof[test] = model.predict(X.iloc[test])
         bazowe[test] = ludnosc[test] * y[trening].sum() / ludnosc[trening].sum()
     return oof, {"model": _metryki(y, oof), "sama_ludnosc": _metryki(y, bazowe)}
+
+
+PROJEKT = Path(__file__).resolve().parents[2]
+AGREGATY = PROJEKT / "data" / "agregaty"
+
+
+def waznosc_cech(model: lgb.LGBMRegressor, X: pd.DataFrame) -> dict[str, float]:
+    """Sredni bezwzgledny wklad cechy w predykcje (SHAP z LightGBM, pred_contrib), malejaco."""
+    wklady = model.predict(X, pred_contrib=True)[:, :-1]  # ostatnia kolumna to wartosc bazowa
+    srednie = np.abs(wklady).mean(axis=0)
+    return dict(sorted(zip(X.columns, srednie.round(4).tolist()), key=lambda p: -p[1]))
+
+
+def main() -> None:
+    from paczkomaty.cechy import zbuduj_cechy
+
+    heksagony = pd.read_parquet(AGREGATY / "heksagony.parquet").query("ludnosc > 0").reset_index(drop=True)
+    niepewne = set(pd.read_parquet(AGREGATY / "powiaty.parquet").query("dane_niepewne")["powiat_id"])
+    punkty = pd.read_parquet(sorted((PROJEKT / "data" / "surowe").glob("osm_punkty_*.parquet"))[-1])
+    X = zbuduj_cechy(heksagony, punkty)
+    y = heksagony["inpost"].to_numpy()
+    # powiaty z niepewnym rozkladem ludnosci (blad Kontur) poza treningiem i ocena
+    uczace = (heksagony["powiat_id"].notna() & ~heksagony["powiat_id"].isin(niepewne)).to_numpy()
+    grupy = heksagony.loc[uczace, "powiat_id"].to_numpy()
+    ludnosc = heksagony.loc[uczace, "ludnosc"].to_numpy()
+
+    oof, przestrzennie = waliduj(X[uczace], y[uczace], grupy, ludnosc)
+    _, losowo = waliduj(X[uczace], y[uczace], grupy, ludnosc, losowo=True)
+    model = lgb.LGBMRegressor(**PARAMETRY).fit(X[uczace], y[uczace])
+    oczekiwane = model.predict(X)
+    oczekiwane[uczace] = oof  # tam, gdzie sie da, predykcja z modelu, ktory danego powiatu nie widzial
+
+    wynik = heksagony[["h3", "powiat_id", "inpost"]].assign(
+        oczekiwane=oczekiwane, niedosycenie=oczekiwane - y, w_ocenie=uczace)
+    wynik.to_parquet(AGREGATY / "model_heksagony.parquet", index=False)
+    metryki = {"przestrzennie": przestrzennie, "losowo": losowo, "szesciokatow_w_ocenie": int(uczace.sum()),
+               "waznosc_cech": waznosc_cech(model, X[uczace].sample(50_000, random_state=0))}
+    (AGREGATY / "metryki_modelu.json").write_text(json.dumps(metryki, indent=2, ensure_ascii=False))
+    print(json.dumps(metryki, indent=2, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    main()
