@@ -11,6 +11,7 @@ from pathlib import Path
 import pandas as pd
 
 from paczkomaty import hurtownia, lokalizacje, model
+from paczkomaty.eksport import eksportuj_wyniki
 from paczkomaty.dane import agreguj_res8, zapisz_agregaty, zbuduj_heksagony
 from paczkomaty.ludnosc import pobierz_kontur, wczytaj_kontur
 from paczkomaty.osm import pobierz_automaty_osm, pobierz_punkty_osm
@@ -53,6 +54,7 @@ def main() -> None:
     hurtownia.main()
     model.main()
     lokalizacje.main()
+    eksportuj_wyniki()
 
 
 if __name__ == "__main__":

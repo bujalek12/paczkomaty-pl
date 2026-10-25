@@ -53,3 +53,21 @@ def test_eksport_tabel_marts(tmp_path):
         "a/powiaty.parquet", "a/wojewodztwa.parquet", "b/powiaty.parquet"]
     assert pd.read_parquet(tmp_path / "b" / "powiaty.parquet").to_dict("records") == [
         {"powiat_id": 1, "udzial_500m": 0.5}]
+
+
+def test_eksport_wynikow_modelu_dla_power_bi(tmp_path):
+    from paczkomaty.eksport import eksportuj_wyniki
+
+    agregaty = tmp_path / "agregaty"
+    agregaty.mkdir()
+    pd.DataFrame({"powiat_id": [1, 1, 2], "inpost": [1, 2, 3], "oczekiwane": [2.0, 2.0, 1.0],
+                  "w_ocenie": [True, True, False]}).to_parquet(agregaty / "model_heksagony.parquet")
+    pd.DataFrame({"powiat_id": [1, 2], "nazwa": ["A", "B"]}).to_parquet(agregaty / "powiaty.parquet")
+    pd.DataFrame({"data": ["2026-10-24"], "paczkomaty": [5]}).to_parquet(agregaty / "stan_dzienny.parquet")
+
+    pliki = eksportuj_wyniki(agregaty, tmp_path / "pbi")
+
+    assert sorted(p.name for p in pliki) == ["powiaty_model.parquet", "stan_dzienny.parquet"]
+    model = pd.read_parquet(tmp_path / "pbi" / "powiaty_model.parquet")
+    assert model[["powiat_id", "inpost", "oczekiwane"]].to_dict("records") == [
+        {"powiat_id": 1, "inpost": 3, "oczekiwane": 4.0}]  # powiat 2 poza ocena modelu
