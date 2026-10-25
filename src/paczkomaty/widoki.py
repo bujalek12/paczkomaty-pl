@@ -88,3 +88,16 @@ def ponizej_oczekiwan(powiaty: pd.DataFrame, n: int = 10) -> pd.DataFrame:
     wynik = powiaty.assign(oczekiwany_500m=a * powiaty["udzial_miejski"] + b)
     wynik["roznica"] = wynik["udzial_500m"] - wynik["oczekiwany_500m"]
     return wynik.nsmallest(n, "roznica").reset_index(drop=True)
+
+
+def niedosycenie_powiatow(model: pd.DataFrame, powiaty: pd.DataFrame, min_oczekiwane: float = 20) -> pd.DataFrame:
+    """Paczkomaty faktyczne i przewidywane przez model w powiatach, malejaco wg brakow w procentach.
+
+    Tylko szesciokaty z oceny (bez powiatow z niepewna ludnoscia) i powiaty, w ktorych model przewiduje
+    co najmniej `min_oczekiwane` paczkomatow (inaczej procent z malych liczb skacze losowo).
+    """
+    suma = model[model["w_ocenie"]].groupby("powiat_id")[["inpost", "oczekiwane"]].sum()
+    wynik = suma[suma["oczekiwane"] >= min_oczekiwane].join(powiaty.set_index("powiat_id")).reset_index()
+    wynik["brakuje"] = wynik["oczekiwane"] - wynik["inpost"]
+    wynik["brakuje_proc"] = wynik["brakuje"] / wynik["oczekiwane"]
+    return wynik.sort_values("brakuje_proc", ascending=False).reset_index(drop=True)

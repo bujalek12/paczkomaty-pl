@@ -8,6 +8,11 @@ import streamlit as st
 
 PROJEKT = Path(__file__).resolve().parents[1]
 AGREGATY = PROJEKT / "data" / "agregaty"
+MIASTA = {
+    "Warszawa": (52.23, 21.01), "Kraków": (50.06, 19.94), "Łódź": (51.76, 19.46), "Wrocław": (51.11, 17.03),
+    "Poznań": (52.41, 16.93), "Gdańsk": (54.37, 18.62), "Szczecin": (53.43, 14.55), "Lublin": (51.25, 22.57),
+    "Katowice": (50.26, 19.02), "Białystok": (53.13, 23.16), "Rzeszów": (50.04, 22.00), "Olsztyn": (53.78, 20.48),
+}
 KOLUMNY_MAPY = ["h3", "ludnosc", "ludnosc_500m", "ludnosc_1km", "inpost", "inpost_w_budowie", "allegro_one_box",
                 "orlen_paczka", "dpd", "dhl", "pocztex", "lat", "lon"]
 REPO = "https://github.com/bujalek12/paczkomaty-pl"
@@ -210,3 +215,14 @@ def wojewodztwa() -> pd.DataFrame:
 def mapa_powiatow() -> dict:
     """Uproszczone granice powiatow (tylko do rysowania), klucz properties.id = powiat_id."""
     return json.loads(_wymagany("powiaty_mapa.geojson").read_text())
+
+
+@st.cache_data(show_spinner=False)
+def model_heksagony() -> pd.DataFrame:
+    """Predykcje modelu zapotrzebowania na szesciokat (paczkomaty.model)."""
+    return pd.read_parquet(_wymagany("model_heksagony.parquet"))
+
+
+@st.cache_data(show_spinner=False)
+def metryki_modelu() -> dict:
+    return json.loads(_wymagany("metryki_modelu.json").read_text())

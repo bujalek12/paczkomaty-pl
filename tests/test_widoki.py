@@ -5,7 +5,8 @@ import pandas as pd
 import pytest
 
 from paczkomaty.widoki import (
-    do_rozdzielczosci, klasa_zasiegu, konkurencja_wg_operatora, pokrycie_wg_typu, ponizej_oczekiwan, w_promieniu,
+    do_rozdzielczosci, klasa_zasiegu, konkurencja_wg_operatora, niedosycenie_powiatow, pokrycie_wg_typu,
+    ponizej_oczekiwan, w_promieniu,
 )
 
 RODZIC7 = h3.cell_to_parent("881f1d4815fffff", 7)
@@ -90,3 +91,15 @@ def test_powiaty_ponizej_oczekiwan_wzgledem_urbanizacji():
     assert wynik["nazwa"].iloc[0] == "C"
     assert wynik["roznica"].iloc[0] < -0.1
     assert len(wynik) == 2 and {"oczekiwany_500m", "roznica"} <= set(wynik.columns)
+
+
+def test_niedosycenie_powiatow_tylko_z_ocenianych_i_bez_malych():
+    model = pd.DataFrame({"powiat_id": [1, 1, 2, 3, 3], "inpost": [10, 5, 1, 30, 0],
+                          "oczekiwane": [20.0, 10.0, 2.0, 25.0, 99.0], "w_ocenie": [True, True, True, True, False]})
+    powiaty = pd.DataFrame({"powiat_id": [1, 2, 3], "nazwa": ["A", "B", "C"]})
+
+    wynik = niedosycenie_powiatow(model, powiaty, min_oczekiwane=5).set_index("nazwa")
+
+    assert list(wynik.index) == ["A", "C"]  # B ma za malo przewidywanych, zeby liczyc procent
+    assert (wynik.loc["A", "brakuje"], wynik.loc["A", "brakuje_proc"]) == (15.0, 0.5)
+    assert wynik.loc["C", "oczekiwane"] == 25.0  # szesciokat spoza oceny pominiety

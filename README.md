@@ -46,6 +46,7 @@ mieszkańców każdego powiatu biorę z Banku Danych Lokalnych GUS (2025), a Kon
 | `app/` | aplikacja Streamlit z interaktywną mapą (pydeck, warstwa H3) |
 | `src/paczkomaty/zrzut.py`, `historia.py` | codzienny zrzut sieci i historia zmian (nowe, usunięte, zmiana statusu) |
 | `src/paczkomaty/granice.py`, `gus.py`, `hurtownia.py` | przypisanie sześciokątów do powiatów, ludność z GUS, budowa hurtowni |
+| `src/paczkomaty/cechy.py`, `model.py` | cechy i model zapotrzebowania (LightGBM, walidacja przestrzenna, SHAP) |
 | `dbt/` | hurtownia (DuckDB): sześciokąty, powiaty, województwa, testy jakości danych |
 | `powerbi/dane/` | tabele dla Power BI (Parquet) |
 | `.github/workflows/` | testy przy każdym pushu, codzienny zrzut sieci |
@@ -79,10 +80,25 @@ agregaty (wydanie `dane`): `stan_dzienny.parquet` (liczba paczkomatów wg wojew�
 `zmiany_dzienne.parquet` (liczba nowych, usuniętych i zmian statusu wg województwa). Jeśli API zwróci wyraźnie mniej
 punktów niż dzień wcześniej (poniżej 95%), zrzut jest odrzucany, żeby awaria nie wyglądała jak zamknięcie paczkomatów.
 
+## Model zapotrzebowania
+
+LightGBM (rozkład Poissona) przewiduje liczbę działających paczkomatów w każdym zamieszkanym sześciokącie
+na podstawie mieszkańców, sklepów, supermarketów, przystanków, szkół i stacji paliw z OpenStreetMap
+oraz odległości od zabudowy miejskiej. Żadna cecha nie korzysta z położenia paczkomatów InPost.
+
+| walidacja przestrzenna (5 foldów wg powiatów) | wyjaśnione odchylenie | MAE |
+|---|---|---|
+| paczkomaty proporcjonalnie do ludności | 61,3% | 0,122 |
+| **model** | **78,6%** | **0,075** |
+
+Losowy podział daje 78,7%, czyli przeciek przestrzenny jest pomijalny (cechy lokalne, bez współrzędnych).
+Największe braki względem modelu: Świnoujście (23 paczkomaty, model: 42), Świętochłowice (22 / 39),
+powiat bielski w podlaskim (30 / 45). Automaty konkurencji prawie nic nie wnoszą do modelu (SHAP).
+
 ## Dalej
 
-Model zapotrzebowania (LightGBM z walidacją przestrzenną), wybór nowych lokalizacji maksymalizujący pokrycie
-i porównanie rekomendacji z paczkomatami, które są właśnie w budowie.
+Wybór nowych lokalizacji maksymalizujący liczbę obsłużonych mieszkańców i porównanie rekomendacji
+z paczkomatami, które są właśnie w budowie.
 
 ## Źródła danych
 

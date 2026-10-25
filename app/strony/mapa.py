@@ -11,16 +11,11 @@ from paczkomaty.widoki import (
     OPERATORZY, SUMOWANE, TYPY_ZABUDOWY, do_rozdzielczosci, dodaj_udzial, klasa_zasiegu, konkurencja_wg_operatora,
     pokrycie_wg_typu, w_promieniu,
 )
-from wspolne import agregaty, legenda, liczba, motyw, procent, rgb, slupki
+from wspolne import MIASTA, agregaty, legenda, liczba, motyw, procent, rgb, slupki
 
 m = motyw()
 dane = dodaj_udzial(agregaty())
 dane["klasa"] = klasa_zasiegu(dane)
-MIASTA = {
-    "Warszawa": (52.23, 21.01), "Kraków": (50.06, 19.94), "Łódź": (51.76, 19.46), "Wrocław": (51.11, 17.03),
-    "Poznań": (52.41, 16.93), "Gdańsk": (54.37, 18.62), "Szczecin": (53.43, 14.55), "Lublin": (51.25, 22.57),
-    "Katowice": (50.26, 19.02), "Białystok": (53.13, 23.16), "Rzeszów": (50.04, 22.00), "Olsztyn": (53.78, 20.48),
-}
 INPOST_OSM = 21_439  # paczkomaty InPost zapisane w OpenStreetMap (notebook 01), do oceny kompletnosci OSM
 
 
