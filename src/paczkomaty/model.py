@@ -63,7 +63,7 @@ def main() -> None:
 
     heksagony = pd.read_parquet(AGREGATY / "heksagony.parquet").query("ludnosc > 0").reset_index(drop=True)
     niepewne = set(pd.read_parquet(AGREGATY / "powiaty.parquet").query("dane_niepewne")["powiat_id"])
-    punkty = pd.read_parquet(sorted((PROJEKT / "data" / "surowe").glob("osm_punkty_*.parquet"))[-1])
+    punkty = pd.read_parquet(PROJEKT / "data" / "zrodla" / "osm_punkty.parquet")
     X = zbuduj_cechy(heksagony, punkty)
     y = heksagony["inpost"].to_numpy()
     # powiaty z niepewnym rozkladem ludnosci (blad Kontur) poza treningiem i ocena
