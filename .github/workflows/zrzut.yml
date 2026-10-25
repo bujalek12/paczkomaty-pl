@@ -1,6 +1,6 @@
-# Codzienny zrzut sieci InPost i historia zmian.
-# Surowe zrzuty (lista punktow) trafiaja do prywatnego repo paczkomaty-dane (wydanie "zrzuty"),
-# tutaj do wydania "dane" ida tylko agregaty: liczby paczkomatow i zmian wg wojewodztwa.
+# Codziennie: zrzut sieci InPost, historia zmian, potem caly pipeline (zasieg, hurtownia dbt, model, lokalizacje).
+# Surowe zrzuty (lista punktow) i zrodla trafiaja do prywatnego repo paczkomaty-dane,
+# tutaj do wydania "dane" ida tylko agregaty, z ktorych korzysta aplikacja.
 name: zrzut
 
 on:
@@ -21,7 +21,7 @@ env:
 jobs:
   zrzut:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - name: Sprawdzenie tokenu do repo z danymi
         id: token
@@ -83,11 +83,33 @@ jobs:
           gh release upload zrzuty -R "$DANE_REPO" --clobber \
             "data/zrzuty/inpost_${dzis}.parquet" "data/zrzuty/inpost_${dzis}_jakosc.json" data/zrzuty/zmiany.parquet
 
-      - name: Zapis agregatow (wydanie "dane")
+      - name: Zrodla (ludnosc Kontur, OSM) z prywatnego repo
+        if: steps.token.outputs.jest == 'tak'
+        env:
+          GH_TOKEN: ${{ secrets.DANE_TOKEN }}
+        run: |
+          gh release download zrodla -R "$DANE_REPO" --dir data/zrodla --pattern '*.parquet'
+          # w poniedzialki swieze dane OSM (pipeline pobierze brakujace pliki z Overpass)
+          if [ "$(date -u +%u)" = "1" ]; then rm -f data/zrodla/osm_*.parquet; fi
+
+      - name: Pipeline (zasieg, hurtownia dbt, model, lokalizacje)
+        if: steps.token.outputs.jest == 'tak'
+        run: uv run python -m paczkomaty.pipeline
+
+      - name: Zapis zrodel (prywatne repo)
+        if: steps.token.outputs.jest == 'tak'
+        env:
+          GH_TOKEN: ${{ secrets.DANE_TOKEN }}
+        run: gh release upload zrodla -R "$DANE_REPO" --clobber data/zrodla/*.parquet
+
+      - name: Zapis agregatow dla aplikacji (wydanie "dane")
         if: steps.token.outputs.jest == 'tak'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release view dane > /dev/null 2>&1 || gh release create dane --title "Dane" \
-            --notes "Agregaty aktualizowane automatycznie (liczby paczkomatow i zmian wg wojewodztwa)."
-          gh release upload dane --clobber data/agregaty/stan_dzienny.parquet data/agregaty/zmiany_dzienne.parquet
+            --notes "Agregaty aktualizowane automatycznie (bez pojedynczych punktow z API InPost)."
+          cd data/agregaty
+          gh release upload dane --clobber stan_dzienny.parquet zmiany_dzienne.parquet heksagony.parquet \
+            powiaty.parquet wojewodztwa.parquet powiaty_mapa.geojson model_heksagony.parquet \
+            metryki_modelu.json rekomendacje.parquet walidacja_lokalizacji.json
