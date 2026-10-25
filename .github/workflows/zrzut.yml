@@ -50,6 +50,8 @@ jobs:
           GH_TOKEN: ${{ secrets.DANE_TOKEN }}
         run: |
           mkdir -p data/zrzuty data/agregaty
+          # osobno, bo w potoku nizej blad dostepu (np. zly token) zginalby i wygladal jak "brak zrzutow"
+          gh release view zrzuty -R "$DANE_REPO" > /dev/null
           dzis="inpost_$(date -u +%F).parquet"
           # sprzed dzisiaj: przy ponownym uruchomieniu tego samego dnia porownujemy z wczoraj, nie z samym soba
           ostatni=$(gh release view zrzuty -R "$DANE_REPO" --json assets --jq '.assets[].name' \
