@@ -1,0 +1,228 @@
+// =====================================================================================
+//  Miary DAX dla raportu "Zasięg paczkomatów"
+//  Model: powiaty (P), powiaty_model (M) -> powiaty po [powiat_id]
+//         powiaty, zabudowa (Z), stan_dzienny (S) -> wojewodztwa (W) po [wojewodztwo]
+//  Miary wklejasz do pustej tabeli "_Miary" (Wprowadz dane -> pusta tabela), kazda przez Nowa miara.
+//  Kolumny obliczeniowe (na koncu pliku) dodajesz w tabeli powiaty / zabudowa przez Nowa kolumna.
+// =====================================================================================
+
+// ---------- Przeglad: zasieg (z tabeli powiaty) ----------
+
+Mieszkańcy =
+    SUM ( powiaty[ludnosc] )
+// Format: liczba calkowita z separatorem tysiecy
+
+Mieszkańcy do 500 m =
+    SUMX ( powiaty, powiaty[ludnosc] * powiaty[udzial_500m] )
+// W tabeli jest udzial, nie liczba osob. Udzialow nie mozna usrednic zwykla srednia
+// (maly powiat liczylby sie tak samo jak Warszawa), wiec najpierw wracam do liczby osob.
+
+Mieszkańcy do 1 km =
+    SUMX ( powiaty, powiaty[ludnosc] * powiaty[udzial_1km] )
+
+Zasięg 500 m =
+    DIVIDE ( [Mieszkańcy do 500 m], [Mieszkańcy] )
+// Srednia wazona ludnoscia. Cala Polska: 46,4%. Format: 0,0%
+
+Zasięg 1 km =
+    DIVIDE ( [Mieszkańcy do 1 km], [Mieszkańcy] )
+// Cala Polska: 69,6%
+
+Mieszkańcy ponad 1 km (mln) =
+    DIVIDE ( SUM ( powiaty[ludnosc_ponad_1km] ), 1000000 )
+// Cala Polska: 11,3. Format: 0,0
+
+Zasięg 500 m kraj =
+    CALCULATE ( [Zasięg 500 m], REMOVEFILTERS () )
+// Punkt odniesienia: ignoruje wszystkie filtry (wojewodztwo, powiat).
+
+Różnica do kraju (pp) =
+    ( [Zasięg 500 m] - [Zasięg 500 m kraj] ) * 100
+// Punkty procentowe. Format: +0;-0;0
+
+
+// ---------- Przeglad: paczkomaty ----------
+
+Paczkomaty =
+    SUM ( powiaty[paczkomaty] )
+// Dzialajace paczkomaty InPost (status Operating). Cala Polska: 32 703
+
+Paczkomaty w budowie =
+    SUM ( powiaty[paczkomaty_w_budowie] )
+// Status Created. Cala Polska: 917
+
+Automaty konkurencji =
+    SUM ( powiaty[automaty_konkurencji] )
+// Z OpenStreetMap, dolna granica (OSM jest niepelny).
+
+Paczkomaty na 10 tys. =
+    DIVIDE ( [Paczkomaty] * 10000, [Mieszkańcy] )
+// Format: 0,0
+
+
+// ---------- Przeglad: miasto a wies (z tabeli zabudowa) ----------
+// zabudowa = mieszkancy szesciokatow H3 zsumowani wg wojewodztwa i typu zabudowy
+// (gestosc zaludnienia szesciokata: Miasta > 2000 os./km2, Male miasta 500-2000, Wies 50-500, rozproszona < 50)
+
+Zasięg 500 m wg zabudowy =
+    DIVIDE ( SUM ( zabudowa[ludnosc_500m] ), SUM ( zabudowa[ludnosc] ) )
+// Miasta: 85,3%, Wies i przedmiescia: 14,8%
+
+Zasięg 1 km wg zabudowy =
+    DIVIDE ( SUM ( zabudowa[ludnosc_1km] ), SUM ( zabudowa[ludnosc] ) )
+
+Udział ludności =
+    DIVIDE (
+        SUM ( zabudowa[ludnosc] ),
+        CALCULATE ( SUM ( zabudowa[ludnosc] ), REMOVEFILTERS ( zabudowa[typ_zabudowy], zabudowa[kolejnosc] ) )
+    )
+// Jaka czesc mieszkancow (wybranego wojewodztwa albo kraju) mieszka w danym typie zabudowy.
+// REMOVEFILTERS tylko na typie zabudowy: filtr wojewodztwa zostaje. Wies i przedmiescia: 35,5% kraju.
+
+
+// ---------- Regiony ----------
+
+Powiaty poniżej 20% =
+    COUNTROWS ( FILTER ( powiaty, powiaty[udzial_500m] < 0.2 ) )
+// Cala Polska: 58 z 380
+
+Korelacja zasięgu z urbanizacją =
+    VAR n = COUNTROWS ( powiaty )
+    VAR sx = SUM ( powiaty[udzial_miejski] )
+    VAR sy = SUM ( powiaty[udzial_500m] )
+    VAR sxy = SUMX ( powiaty, powiaty[udzial_miejski] * powiaty[udzial_500m] )
+    VAR sxx = SUMX ( powiaty, powiaty[udzial_miejski] ^ 2 )
+    VAR syy = SUMX ( powiaty, powiaty[udzial_500m] ^ 2 )
+    RETURN
+        DIVIDE ( n * sxy - sx * sy, SQRT ( ( n * sxx - sx ^ 2 ) * ( n * syy - sy ^ 2 ) ) )
+// Wspolczynnik Pearsona, powiat = jedna obserwacja (jak w aplikacji). Cala Polska: 0,96. Format: 0,00
+
+Kolor powiatu =
+    VAR u = SELECTEDVALUE ( powiaty[udzial_500m] )
+    RETURN
+        SWITCH (
+            TRUE (),
+            ISBLANK ( u ), BLANK (),
+            u < 0.20, "#ba7c03",
+            u < 0.35, "#664c13",
+            u < 0.55, "#3d4a57",
+            u < 0.70, "#245286",
+            "#367ed6"
+        )
+// Te same 5 klas co mapa w aplikacji: bursztynowy = wyraznie ponizej sredniej kraju, szary = okolice
+// sredniej (46%), niebieski = powyzej. Kolory to #c98500 / #4a5866 / #3987e5 z przezroczystoscia
+// z aplikacji, nalozone na ciemne tlo #0f1a24 (Power BI nie ma przezroczystosci w tym miejscu).
+// Dla motywu jasnego lepiej uzyc gradientu z motywu (INSTRUKCJA.md, strona 2).
+// Uzycie: formatowanie warunkowe -> Wartosc pola (jesli wizualizacja ma przycisk fx przy kolorze).
+
+
+// ---------- Model zapotrzebowania (z tabeli powiaty_model) ----------
+
+Paczkomaty faktyczne (model) =
+    SUM ( powiaty_model[inpost] )
+// Bez 24 powiatow z niepewnym rozkladem ludnosci, dlatego mniej niz [Paczkomaty].
+
+Paczkomaty według modelu =
+    SUM ( powiaty_model[oczekiwane] )
+
+Brakuje paczkomatów =
+    [Paczkomaty według modelu] - [Paczkomaty faktyczne (model)]
+// Dodatnie = mniej paczkomatow, niz przewiduje model dla takiej okolicy. Format: 0
+
+Brakuje % =
+    DIVIDE ( [Brakuje paczkomatów], [Paczkomaty według modelu] )
+// Swinoujscie: 43%. Uwaga: w malych powiatach procent skacze, dlatego w rankingu filtr
+// "Paczkomaty wedlug modelu >= 20" (tak samo jak w aplikacji).
+
+
+// ---------- Historia sieci (z tabeli stan_dzienny) ----------
+
+Działające =
+    CALCULATE ( SUM ( stan_dzienny[paczkomaty] ), stan_dzienny[status] = "Operating" )
+
+W budowie (dzień) =
+    CALCULATE ( SUM ( stan_dzienny[paczkomaty] ), stan_dzienny[status] = "Created" )
+
+Wyłączone =
+    CALCULATE ( SUM ( stan_dzienny[paczkomaty] ), stan_dzienny[status] IN { "Disabled", "NonOperating" } )
+
+Ostatni dzień =
+    CALCULATE ( MAX ( stan_dzienny[data] ), REMOVEFILTERS ( stan_dzienny[data] ) )
+// Format: dd.mm.yyyy
+
+Działające ostatniego dnia =
+    VAR ostatni = [Ostatni dzień]
+    RETURN
+        CALCULATE ( [Działające], stan_dzienny[data] = ostatni )
+// Miara najpierw do zmiennej: warunek w CALCULATE porownuje kolumne ze stala wartoscia.
+
+Zmiana działających od początku =
+    VAR pierwszy = CALCULATE ( MIN ( stan_dzienny[data] ), REMOVEFILTERS ( stan_dzienny[data] ) )
+    VAR teraz = [Działające ostatniego dnia]
+    VAR wtedy = CALCULATE ( [Działające], stan_dzienny[data] = pierwszy )
+    RETURN
+        teraz - wtedy
+// Ile dzialajacych paczkomatow przybylo od pierwszego zrzutu (24.10.2026). Format: +0;-0;0
+
+
+// ---------- Tytuly stron (tytul = wniosek, liczby z danych) ----------
+
+Tytuł przeglądu =
+    "Paczkomat do 500 m ma " & FORMAT ( [Zasięg 500 m kraj], "0.0%" ) & " mieszkańców. W miastach "
+        & FORMAT ( CALCULATE ( [Zasięg 500 m wg zabudowy], zabudowa[typ_zabudowy] = "Miasta", REMOVEFILTERS ( wojewodztwa ) ), "0%" )
+        & ", na wsi i przedmieściach "
+        & FORMAT ( CALCULATE ( [Zasięg 500 m wg zabudowy], zabudowa[typ_zabudowy] = "Wieś i przedmieścia", REMOVEFILTERS ( wojewodztwa ) ), "0%" )
+// W formacie kropka oznacza miejsce dziesietne, a wynik i tak jest w ustawieniach regionalnych pliku:
+// przy jezyku polskim wychodzi przecinek (46,4%).
+// Uzycie: tytul wizualizacji albo pole tekstowe -> fx -> Wartosc pola -> [Tytul przegladu].
+
+Stan na =
+    "Stan sieci z " & FORMAT ( [Ostatni dzień], "d.MM.yyyy" )
+
+
+// =====================================================================================
+//  Kolumny obliczeniowe (Nowa kolumna w podanej tabeli, nie w _Miary)
+// =====================================================================================
+
+// --- tabela powiaty ---
+
+Oczekiwany zasięg 500 m =
+    VAR prosta =
+        LINESTX (
+            FILTER ( ALL ( powiaty ), NOT powiaty[dane_niepewne] ),
+            powiaty[udzial_500m],
+            powiaty[udzial_miejski]
+        )
+    VAR a = MAXX ( prosta, [Slope1] )
+    VAR b = MAXX ( prosta, [Intercept] )
+    RETURN
+        a * powiaty[udzial_miejski] + b
+// Regresja liniowa: zasieg 500 m ~ udzial mieszkancow miast (bez 24 powiatow z niepewna ludnoscia),
+// tak jak strona "Regiony" w aplikacji. Wynik: ok. 0,626 * udzial_miejski + 0,086.
+
+Różnica do oczekiwanego (pp) =
+    ( powiaty[udzial_500m] - powiaty[Oczekiwany zasięg 500 m] ) * 100
+// Najbardziej ponizej oczekiwan: Zielona Gora (-19 pp), Swinoujscie (-18 pp), Tarnobrzeg (-17 pp).
+
+Klasa zasięgu =
+    SWITCH (
+        TRUE (),
+        powiaty[udzial_500m] < 0.20, "1. poniżej 20%",
+        powiaty[udzial_500m] < 0.35, "2. 20–35%",
+        powiaty[udzial_500m] < 0.55, "3. 35–55%",
+        powiaty[udzial_500m] < 0.70, "4. 55–70%",
+        "5. powyżej 70%"
+    )
+// Do legendy mapy i do fragmentatora. Cyfra na poczatku = kolejnosc sortowania.
+
+// --- tabela zabudowa ---
+
+kolejnosc =
+    SWITCH (
+        zabudowa[typ_zabudowy],
+        "Miasta", 1,
+        "Małe miasta i osiedla", 2,
+        "Wieś i przedmieścia", 3,
+        "Zabudowa rozproszona", 4
+    )
+// typ_zabudowy -> Sortuj wedlug kolumny -> kolejnosc (od najgestszej zabudowy).
