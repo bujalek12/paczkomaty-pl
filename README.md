@@ -51,7 +51,7 @@ mieszkańców każdego powiatu biorę z Banku Danych Lokalnych GUS (2025), a Kon
 | `src/paczkomaty/optymalizacja.py`, `lokalizacje.py` | wybór nowych lokalizacji i walidacja na paczkomatach w budowie |
 | `src/paczkomaty/cechy.py`, `model.py` | cechy i model zapotrzebowania (LightGBM, walidacja przestrzenna, SHAP) |
 | `dbt/` | hurtownia (DuckDB): sześciokąty, powiaty, województwa, testy jakości danych |
-| `powerbi/dane/` | tabele dla Power BI (Parquet) |
+| `powerbi/` | raport Power BI (projekt `.pbip`), tabele w Parquet, miary DAX, mapa powiatów (TopoJSON) |
 | `.github/workflows/` | testy przy każdym pushu, codzienny zrzut sieci |
 | `tests/` | testy jednostkowe (pytest) |
 
@@ -123,6 +123,14 @@ ani do modelu, ani do optymalizacji) leży w 500 m od proponowanych miejsc.
 Tylko 23% budowanych paczkomatów powstaje tam, gdzie dziś nie ma paczkomatu w 500 m: **InPost głównie zagęszcza
 sieć**. Dlatego najlepiej trafia ranking braków z modelu (97 razy częściej niż losowo), a optymalizacja zasięgu
 pokazuje inną strategię: więcej nowych klientów zamiast obsługi miejsc, gdzie popyt już jest.
+
+## Raport Power BI
+
+Ta sama historia w formie raportu biznesowego: przegląd, mapa powiatów, urbanizacja, model i historia sieci.
+`powerbi/raport/zasieg_paczkomatow.pbip` pobiera dane z tego repozytorium, więc po sklonowaniu wystarczy
+**Odśwież** (przy pierwszym razie dostęp anonimowy do GitHuba). Szczegóły: `powerbi/INSTRUKCJA.md`.
+
+![Raport Power BI: regiony](docs/img/powerbi_regiony.png)
 
 ## Źródła danych
 

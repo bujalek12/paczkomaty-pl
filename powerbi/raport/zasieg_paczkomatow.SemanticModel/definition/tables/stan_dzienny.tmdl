@@ -1,0 +1,39 @@
+table stan_dzienny
+	lineageTag: b63cc64e-146f-4219-ab87-364f9c187ccf
+
+	column data
+		dataType: dateTime
+		formatString: dd.mm.yyyy
+		lineageTag: 0cda5ede-9930-4c87-9096-eff33b0c4bf9
+		summarizeBy: none
+		sourceColumn: data
+
+	column wojewodztwo
+		dataType: string
+		lineageTag: 7bc60fd8-4648-47fc-9d40-09dff37708e1
+		summarizeBy: none
+		sourceColumn: wojewodztwo
+
+	column status
+		dataType: string
+		lineageTag: 4c8e80d8-fefc-47c9-86ca-3a9ba425e4c2
+		summarizeBy: none
+		sourceColumn: status
+
+	column paczkomaty
+		dataType: int64
+		lineageTag: a54c94d3-2c37-4532-9c1b-04f95f5a996e
+		summarizeBy: none
+		sourceColumn: paczkomaty
+
+	partition stan_dzienny = m
+		mode: import
+		source =
+				let
+				    Plik = Folder & "stan_dzienny.parquet",
+				    Zawartosc = if Text.StartsWith(Folder, "http") then Web.Contents(Plik) else File.Contents(Plik),
+				    Zrodlo = Parquet.Document(Binary.Buffer(Zawartosc)),
+				    Typy = Table.TransformColumnTypes(Zrodlo, {{"data", type date}})
+				in
+				    Typy
+

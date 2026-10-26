@@ -75,6 +75,7 @@ Udział ludności =
     DIVIDE (
         SUM ( zabudowa[ludnosc] ),
         CALCULATE ( SUM ( zabudowa[ludnosc] ), REMOVEFILTERS ( zabudowa[typ_zabudowy], zabudowa[kolejnosc] ) )
+        // kolejnosc tez, bo przy sortowaniu wg kolumny Power BI filtruje obie
     )
 // Jaka czesc mieszkancow (wybranego wojewodztwa albo kraju) mieszka w danym typie zabudowy.
 // REMOVEFILTERS tylko na typie zabudowy: filtr wojewodztwa zostaje. Wies i przedmiescia: 35,5% kraju.
@@ -215,14 +216,5 @@ Klasa zasięgu =
     )
 // Do legendy mapy i do fragmentatora. Cyfra na poczatku = kolejnosc sortowania.
 
-// --- tabela zabudowa ---
-
-kolejnosc =
-    SWITCH (
-        zabudowa[typ_zabudowy],
-        "Miasta", 1,
-        "Małe miasta i osiedla", 2,
-        "Wieś i przedmieścia", 3,
-        "Zabudowa rozproszona", 4
-    )
-// typ_zabudowy -> Sortuj wedlug kolumny -> kolejnosc (od najgestszej zabudowy).
+// Tabela zabudowa ma kolumne kolejnosc juz w pliku z danymi (nie jako kolumna DAX): kolumna obliczona
+// z typ_zabudowy nie moze sluzyc do sortowania typ_zabudowy, bo powstaje zaleznosc cykliczna.

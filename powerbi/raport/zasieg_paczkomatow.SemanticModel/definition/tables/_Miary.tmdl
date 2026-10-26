@@ -1,0 +1,190 @@
+table _Miary
+	lineageTag: 14f2d257-98cc-463f-9e8d-d38972aafaf4
+
+	measure 'Mieszkańcy' =
+			    SUM ( powiaty[ludnosc] )
+		formatString: #,0
+		lineageTag: 5b40446f-b504-4d60-913e-a4a6543c11af
+
+	measure 'Mieszkańcy do 500 m' =
+			    SUMX ( powiaty, powiaty[ludnosc] * powiaty[udzial_500m] )
+		formatString: #,0
+		lineageTag: ae153bdd-0268-417e-a94e-54173cfb233f
+
+	measure 'Mieszkańcy do 1 km' =
+			    SUMX ( powiaty, powiaty[ludnosc] * powiaty[udzial_1km] )
+		formatString: #,0
+		lineageTag: 4d4666d5-23da-4632-9057-a3bcd6f400ea
+
+	measure 'Zasięg 500 m' =
+			    DIVIDE ( [Mieszkańcy do 500 m], [Mieszkańcy] )
+		formatString: 0.0%
+		lineageTag: 6f7abd30-e021-48bd-a7a0-896a5746fd10
+
+	measure 'Zasięg 1 km' =
+			    DIVIDE ( [Mieszkańcy do 1 km], [Mieszkańcy] )
+		formatString: 0.0%
+		lineageTag: 8ab237bc-0b0f-48b8-805a-bf59bcab09df
+
+	measure 'Mieszkańcy ponad 1 km (mln)' =
+			    DIVIDE ( SUM ( powiaty[ludnosc_ponad_1km] ), 1000000 )
+		formatString: 0.0
+		lineageTag: 46302ede-4432-4b38-a47b-aa9ada7d7b1b
+
+	measure 'Zasięg 500 m kraj' =
+			    CALCULATE ( [Zasięg 500 m], REMOVEFILTERS () )
+		formatString: 0.0%
+		lineageTag: 13cdaae0-ae9f-4f4e-87e0-50a98edacafb
+
+	measure 'Różnica do kraju (pp)' =
+			    ( [Zasięg 500 m] - [Zasięg 500 m kraj] ) * 100
+		formatString: +0;-0;0
+		lineageTag: d841d008-b550-4789-bc66-f939a456de22
+
+	measure Paczkomaty =
+			    SUM ( powiaty[paczkomaty] )
+		formatString: #,0
+		lineageTag: 716d33f2-0089-47f8-ad53-0b9a9480986b
+
+	measure 'Paczkomaty w budowie' =
+			    SUM ( powiaty[paczkomaty_w_budowie] )
+		formatString: #,0
+		lineageTag: d6792ced-5328-4165-9b5f-5837dbff70dc
+
+	measure 'Automaty konkurencji' =
+			    SUM ( powiaty[automaty_konkurencji] )
+		formatString: #,0
+		lineageTag: 3f6f069d-8a3d-447e-b2fc-acd4c36a040e
+
+	measure 'Paczkomaty na 10 tys.' =
+			    DIVIDE ( [Paczkomaty] * 10000, [Mieszkańcy] )
+		formatString: 0.0
+		lineageTag: 2fa32e7a-298b-4482-b7a2-5c92a693a003
+
+	measure 'Zasięg 500 m wg zabudowy' =
+			    DIVIDE ( SUM ( zabudowa[ludnosc_500m] ), SUM ( zabudowa[ludnosc] ) )
+		formatString: 0.0%
+		lineageTag: 11adef75-2501-47ae-838d-a5ebe55acce6
+
+	measure 'Zasięg 1 km wg zabudowy' =
+			    DIVIDE ( SUM ( zabudowa[ludnosc_1km] ), SUM ( zabudowa[ludnosc] ) )
+		formatString: 0.0%
+		lineageTag: 9ff15d81-5646-4383-a20e-0eb67571b039
+
+	measure 'Udział ludności' =
+			    DIVIDE (
+			        SUM ( zabudowa[ludnosc] ),
+			        CALCULATE ( SUM ( zabudowa[ludnosc] ), REMOVEFILTERS ( zabudowa[typ_zabudowy], zabudowa[kolejnosc] ) )
+			    )
+		formatString: 0.0%
+		lineageTag: 82d086da-361c-4e46-955a-62734dfd60f7
+
+	measure 'Powiaty poniżej 20%' =
+			    COUNTROWS ( FILTER ( powiaty, powiaty[udzial_500m] < 0.2 ) )
+		formatString: 0.0%
+		lineageTag: 31d57543-1b84-41f9-9e4d-a029ac215e92
+
+	measure 'Korelacja zasięgu z urbanizacją' =
+			    VAR n = COUNTROWS ( powiaty )
+			    VAR sx = SUM ( powiaty[udzial_miejski] )
+			    VAR sy = SUM ( powiaty[udzial_500m] )
+			    VAR sxy = SUMX ( powiaty, powiaty[udzial_miejski] * powiaty[udzial_500m] )
+			    VAR sxx = SUMX ( powiaty, powiaty[udzial_miejski] ^ 2 )
+			    VAR syy = SUMX ( powiaty, powiaty[udzial_500m] ^ 2 )
+			    RETURN
+			        DIVIDE ( n * sxy - sx * sy, SQRT ( ( n * sxx - sx ^ 2 ) * ( n * syy - sy ^ 2 ) ) )
+		formatString: 0.00
+		lineageTag: cf2e579e-272e-4641-89aa-e1d4d5140749
+
+	measure 'Kolor powiatu' =
+			    VAR u = SELECTEDVALUE ( powiaty[udzial_500m] )
+			    RETURN
+			        SWITCH (
+			            TRUE (),
+			            ISBLANK ( u ), BLANK (),
+			            u < 0.20, "#ba7c03",
+			            u < 0.35, "#664c13",
+			            u < 0.55, "#3d4a57",
+			            u < 0.70, "#245286",
+			            "#367ed6"
+			        )
+		lineageTag: c210b03a-af10-4e73-be9b-588be496da3a
+
+	measure 'Paczkomaty faktyczne (model)' =
+			    SUM ( powiaty_model[inpost] )
+		formatString: #,0
+		lineageTag: 3916fc3b-7273-4341-8b47-b62c6d714ba5
+
+	measure 'Paczkomaty według modelu' =
+			    SUM ( powiaty_model[oczekiwane] )
+		formatString: #,0
+		lineageTag: 6ec5951d-a998-4eed-b7a7-ef620b26daec
+
+	measure 'Brakuje paczkomatów' =
+			    [Paczkomaty według modelu] - [Paczkomaty faktyczne (model)]
+		formatString: #,0
+		lineageTag: 081e33d6-b119-4c83-bf03-ff4cbfc19358
+
+	measure 'Brakuje %' =
+			    DIVIDE ( [Brakuje paczkomatów], [Paczkomaty według modelu] )
+		formatString: 0.0%
+		lineageTag: ce914efc-df57-4b9e-af70-c2a7df5f3654
+
+	measure 'Działające' =
+			    CALCULATE ( SUM ( stan_dzienny[paczkomaty] ), stan_dzienny[status] = "Operating" )
+		formatString: #,0
+		lineageTag: 6b1e5976-a6b9-42b3-bda4-57a84d7bc149
+
+	measure 'W budowie (dzień)' =
+			    CALCULATE ( SUM ( stan_dzienny[paczkomaty] ), stan_dzienny[status] = "Created" )
+		formatString: #,0
+		lineageTag: 27c66ee7-0e17-42a0-8d43-509173fbe235
+
+	measure 'Wyłączone' =
+			    CALCULATE ( SUM ( stan_dzienny[paczkomaty] ), stan_dzienny[status] IN { "Disabled", "NonOperating" } )
+		formatString: #,0
+		lineageTag: 53c40852-cc44-4a83-ae83-65ad27ee5d84
+
+	measure 'Ostatni dzień' =
+			    CALCULATE ( MAX ( stan_dzienny[data] ), REMOVEFILTERS ( stan_dzienny[data] ) )
+		formatString: dd.mm.yyyy
+		lineageTag: 6bd7bc07-45ee-4310-86be-e28cc48a4fa1
+
+	measure 'Działające ostatniego dnia' =
+			    VAR ostatni = [Ostatni dzień]
+			    RETURN
+			        CALCULATE ( [Działające], stan_dzienny[data] = ostatni )
+		formatString: #,0
+		lineageTag: de6ccd77-bb8d-47de-b2ed-f40cb5894f0b
+
+	measure 'Zmiana działających od początku' =
+			    VAR pierwszy = CALCULATE ( MIN ( stan_dzienny[data] ), REMOVEFILTERS ( stan_dzienny[data] ) )
+			    VAR teraz = [Działające ostatniego dnia]
+			    VAR wtedy = CALCULATE ( [Działające], stan_dzienny[data] = pierwszy )
+			    RETURN
+			        teraz - wtedy
+		formatString: +0;-0;0
+		lineageTag: 7afcb59d-810a-40e8-bf3d-4a72cebe0d9c
+
+	measure 'Tytuł przeglądu' =
+			    "Paczkomat do 500 m ma " & FORMAT ( [Zasięg 500 m kraj], "0.0%" ) & " mieszkańców. W miastach "
+			        & FORMAT ( CALCULATE ( [Zasięg 500 m wg zabudowy], zabudowa[typ_zabudowy] = "Miasta", REMOVEFILTERS ( wojewodztwa ) ), "0%" )
+			        & ", na wsi i przedmieściach "
+			        & FORMAT ( CALCULATE ( [Zasięg 500 m wg zabudowy], zabudowa[typ_zabudowy] = "Wieś i przedmieścia", REMOVEFILTERS ( wojewodztwa ) ), "0%" )
+		lineageTag: ac6d2f7a-799a-4ed2-9299-05524137bf11
+
+	measure 'Stan na' =
+			    "Stan sieci z " & FORMAT ( [Ostatni dzień], "d.MM.yyyy" )
+		lineageTag: d808d81c-9ddb-43a8-918b-9d7ad182d5c8
+
+	column Kolumna
+		dataType: string
+		isHidden
+		lineageTag: 65bb0ba0-c235-4856-b646-fe2cf3a065c6
+		summarizeBy: none
+		sourceColumn: Kolumna
+
+	partition _Miary = m
+		mode: import
+		source = #table(type table [Kolumna = text], {})
+

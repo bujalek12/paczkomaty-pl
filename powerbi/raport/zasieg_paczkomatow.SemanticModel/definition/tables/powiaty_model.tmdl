@@ -1,0 +1,51 @@
+table powiaty_model
+	lineageTag: 1d99ba43-c93a-4630-9aec-53301d0e563d
+
+	column powiat_id
+		dataType: int64
+		lineageTag: 531c8807-a4fa-4471-8723-743d6d65382e
+		summarizeBy: none
+		sourceColumn: powiat_id
+
+	column inpost
+		dataType: int64
+		lineageTag: e38c55a4-bb75-44dd-a251-e5836d3bd4f3
+		summarizeBy: none
+		sourceColumn: inpost
+
+	column oczekiwane
+		dataType: double
+		lineageTag: 962466f2-1496-45d2-a041-b1e80eea158a
+		summarizeBy: sum
+		sourceColumn: oczekiwane
+
+	column nazwa
+		dataType: string
+		lineageTag: 50ce03e4-3c72-4fae-9167-4a9e8716f0c9
+		summarizeBy: none
+		sourceColumn: nazwa
+
+	column brakuje
+		dataType: double
+		lineageTag: def6c737-c9b6-432a-b835-c8a0279cb7fa
+		summarizeBy: sum
+		sourceColumn: brakuje
+
+	column brakuje_proc
+		dataType: double
+		formatString: 0.0%
+		lineageTag: 5ddf95d4-ede6-4e9b-a198-fc4a5b073462
+		summarizeBy: sum
+		sourceColumn: brakuje_proc
+
+	partition powiaty_model = m
+		mode: import
+		source =
+				let
+				    Plik = Folder & "powiaty_model.parquet",
+				    Zawartosc = if Text.StartsWith(Folder, "http") then Web.Contents(Plik) else File.Contents(Plik),
+				    Zrodlo = Parquet.Document(Binary.Buffer(Zawartosc)),
+				    Typy = Table.TransformColumnTypes(Zrodlo, {{"powiat_id", Int64.Type}})
+				in
+				    Typy
+

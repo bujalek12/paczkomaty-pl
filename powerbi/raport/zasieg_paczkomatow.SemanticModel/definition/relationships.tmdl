@@ -1,0 +1,16 @@
+relationship 821d8ac8-e5c0-4316-80f4-ee168a4e88be
+	fromColumn: powiaty_model.powiat_id
+	toColumn: powiaty.powiat_id
+
+relationship 0e9d9b9e-b88a-414b-8216-bec0c351ca29
+	fromColumn: powiaty.wojewodztwo
+	toColumn: wojewodztwa.wojewodztwo
+
+relationship c81e5073-6189-4c39-8d99-d0ef89c7b56a
+	fromColumn: zabudowa.wojewodztwo
+	toColumn: wojewodztwa.wojewodztwo
+
+relationship e1775e17-b6f3-4c30-bced-597cee2be6d9
+	fromColumn: stan_dzienny.wojewodztwo
+	toColumn: wojewodztwa.wojewodztwo
+

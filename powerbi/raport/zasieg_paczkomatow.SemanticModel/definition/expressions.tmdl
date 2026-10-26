@@ -1,0 +1,3 @@
+expression Folder = "https://raw.githubusercontent.com/maciej-bujalski/paczkomaty-pl/main/powerbi/dane/" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: 9b283457-dc3e-4c8f-983e-43fa8650c80f
+

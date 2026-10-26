@@ -1,0 +1,81 @@
+table wojewodztwa
+	lineageTag: d73c75a1-a661-4c30-8233-3e403113985c
+
+	column wojewodztwo
+		dataType: string
+		lineageTag: 883c43ec-a5b0-41b9-a490-7610111bdf12
+		summarizeBy: none
+		sourceColumn: wojewodztwo
+
+	column ludnosc
+		dataType: double
+		lineageTag: b932b801-9364-4076-8e15-51943fdf3f5f
+		summarizeBy: sum
+		sourceColumn: ludnosc
+
+	column udzial_500m
+		dataType: double
+		formatString: 0.0%
+		lineageTag: 3b6a34ac-f257-4bb8-8908-98aac227b969
+		summarizeBy: none
+		sourceColumn: udzial_500m
+
+	column udzial_1km
+		dataType: double
+		formatString: 0.0%
+		lineageTag: e74cdc3b-0b3d-4c76-9b20-c9249c1cf17c
+		summarizeBy: none
+		sourceColumn: udzial_1km
+
+	column ludnosc_ponad_1km
+		dataType: double
+		lineageTag: 0ffdf7d9-1020-452b-828f-3484ae7eef82
+		summarizeBy: sum
+		sourceColumn: ludnosc_ponad_1km
+
+	column paczkomaty
+		dataType: double
+		lineageTag: 6c3542df-76bb-45d4-8873-aa4a16f23a2e
+		summarizeBy: sum
+		sourceColumn: paczkomaty
+
+	column paczkomaty_w_budowie
+		dataType: double
+		lineageTag: 1573cbef-67a7-4d34-b81c-437b92190813
+		summarizeBy: sum
+		sourceColumn: paczkomaty_w_budowie
+
+	column automaty_konkurencji
+		dataType: double
+		lineageTag: 135e71d9-ddd3-446a-8ec8-efdb24f8ce9a
+		summarizeBy: sum
+		sourceColumn: automaty_konkurencji
+
+	column paczkomaty_na_10_tys
+		dataType: double
+		lineageTag: 441d3f59-0ff3-45c3-b713-0853c766196c
+		summarizeBy: sum
+		sourceColumn: paczkomaty_na_10_tys
+
+	column paczkomaty_wg_api
+		dataType: double
+		lineageTag: e5eaf639-9953-4f81-9af9-bfcc10f0a68a
+		summarizeBy: sum
+		sourceColumn: paczkomaty_wg_api
+
+	column miejsce_w_kraju
+		dataType: int64
+		lineageTag: 008a0797-cfe4-4cd7-a9e5-100021634763
+		summarizeBy: none
+		sourceColumn: miejsce_w_kraju
+
+	partition wojewodztwa = m
+		mode: import
+		source =
+				let
+				    Plik = Folder & "wojewodztwa.parquet",
+				    Zawartosc = if Text.StartsWith(Folder, "http") then Web.Contents(Plik) else File.Contents(Plik),
+				    Zrodlo = Parquet.Document(Binary.Buffer(Zawartosc))
+				in
+				    Zrodlo
+

@@ -1,0 +1,50 @@
+table zabudowa
+	lineageTag: cb295b49-4527-4ae7-9f92-548ced015208
+
+	column wojewodztwo
+		dataType: string
+		lineageTag: e49b34b3-fb8d-47ac-866c-4fbe63d2f352
+		summarizeBy: none
+		sourceColumn: wojewodztwo
+
+	column typ_zabudowy
+		dataType: string
+		lineageTag: b1c40480-8ec0-41b4-8fec-e46e6d7d4c31
+		summarizeBy: none
+		sourceColumn: typ_zabudowy
+		sortByColumn: kolejnosc
+
+	column kolejnosc
+		dataType: int64
+		lineageTag: 83fe2183-4a6a-4814-a55b-5391f6587a7e
+		summarizeBy: none
+		sourceColumn: kolejnosc
+
+	column ludnosc
+		dataType: double
+		lineageTag: 05ef9ea6-f1c0-4164-8f56-d89164837b51
+		summarizeBy: sum
+		sourceColumn: ludnosc
+
+	column ludnosc_500m
+		dataType: double
+		lineageTag: 2353bf74-f064-49e4-affe-6d8efb4deade
+		summarizeBy: sum
+		sourceColumn: ludnosc_500m
+
+	column ludnosc_1km
+		dataType: double
+		lineageTag: 77ba460c-0387-4b80-86c0-22651adf05af
+		summarizeBy: sum
+		sourceColumn: ludnosc_1km
+
+	partition zabudowa = m
+		mode: import
+		source =
+				let
+				    Plik = Folder & "zabudowa.parquet",
+				    Zawartosc = if Text.StartsWith(Folder, "http") then Web.Contents(Plik) else File.Contents(Plik),
+				    Zrodlo = Parquet.Document(Binary.Buffer(Zawartosc))
+				in
+				    Zrodlo
+

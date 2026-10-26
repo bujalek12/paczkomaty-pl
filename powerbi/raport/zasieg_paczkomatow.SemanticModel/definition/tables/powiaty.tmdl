@@ -1,0 +1,148 @@
+table powiaty
+	lineageTag: 2cfe5fbe-7f29-4f10-a955-077abcea46c3
+
+	column powiat_id
+		dataType: int64
+		lineageTag: 825d056c-3565-4da0-81c7-8f80776989ac
+		summarizeBy: none
+		sourceColumn: powiat_id
+
+	column powiat
+		dataType: string
+		lineageTag: b0d24d46-8bdc-4257-ae39-cbc2162463d7
+		summarizeBy: none
+		sourceColumn: powiat
+
+	column wojewodztwo
+		dataType: string
+		lineageTag: a0179856-9df7-4171-9a4d-2d14c9aceafd
+		summarizeBy: none
+		sourceColumn: wojewodztwo
+
+	column nazwa
+		dataType: string
+		lineageTag: 47b9073b-0465-4c4c-8c8b-fd1e022771a6
+		summarizeBy: none
+		sourceColumn: nazwa
+
+	column ludnosc
+		dataType: double
+		lineageTag: b1f15e87-af4b-4cee-b3fb-7ac8db8a75b9
+		summarizeBy: sum
+		sourceColumn: ludnosc
+
+	column udzial_500m
+		dataType: double
+		formatString: 0.0%
+		lineageTag: 30f54dee-6b80-414e-8135-9352f3da81be
+		summarizeBy: none
+		sourceColumn: udzial_500m
+
+	column udzial_1km
+		dataType: double
+		formatString: 0.0%
+		lineageTag: f55b5988-cc1a-48d1-9fae-437b17291b75
+		summarizeBy: none
+		sourceColumn: udzial_1km
+
+	column ludnosc_ponad_1km
+		dataType: double
+		lineageTag: 4900c949-44c0-4531-ac41-1468d5b3d67a
+		summarizeBy: sum
+		sourceColumn: ludnosc_ponad_1km
+
+	column udzial_miejski
+		dataType: double
+		formatString: 0.0%
+		lineageTag: cdd229e9-5d6d-44d7-954f-ceff480e9161
+		summarizeBy: none
+		sourceColumn: udzial_miejski
+
+	column paczkomaty
+		dataType: double
+		lineageTag: cb25114b-347a-4842-823e-acde964e302e
+		summarizeBy: sum
+		sourceColumn: paczkomaty
+
+	column paczkomaty_w_budowie
+		dataType: double
+		lineageTag: 867a77c2-6c3f-4f45-8bfb-d34df705cc60
+		summarizeBy: sum
+		sourceColumn: paczkomaty_w_budowie
+
+	column automaty_konkurencji
+		dataType: double
+		lineageTag: 724bf238-4466-4030-aec6-dbab4c50fe22
+		summarizeBy: sum
+		sourceColumn: automaty_konkurencji
+
+	column paczkomaty_na_10_tys
+		dataType: double
+		lineageTag: 6b5020f9-f892-48c5-a649-f5207a9e3580
+		summarizeBy: sum
+		sourceColumn: paczkomaty_na_10_tys
+
+	column wspolczynnik_kalibracji
+		dataType: double
+		lineageTag: 14d535a4-8138-4b4d-b245-509f39902e17
+		summarizeBy: sum
+		sourceColumn: wspolczynnik_kalibracji
+
+	column dane_niepewne
+		dataType: boolean
+		lineageTag: ad81ba29-a69d-4d33-b5ed-76f4b9dc7e82
+		summarizeBy: none
+		sourceColumn: dane_niepewne
+
+	column miejsce_w_kraju
+		dataType: int64
+		lineageTag: 2b99ac67-30e5-4a76-9e08-d2caee9ee81f
+		summarizeBy: none
+		sourceColumn: miejsce_w_kraju
+
+	column 'Oczekiwany zasięg 500 m' =
+			    VAR prosta =
+			        LINESTX (
+			            FILTER ( ALL ( powiaty ), NOT powiaty[dane_niepewne] ),
+			            powiaty[udzial_500m],
+			            powiaty[udzial_miejski]
+			        )
+			    VAR a = MAXX ( prosta, [Slope1] )
+			    VAR b = MAXX ( prosta, [Intercept] )
+			    RETURN
+			        a * powiaty[udzial_miejski] + b
+		dataType: double
+		lineageTag: 600e630d-8449-4e7a-94c5-605c83f0fdfe
+		summarizeBy: none
+		formatString: 0.0%
+
+	column 'Różnica do oczekiwanego (pp)' =
+			    ( powiaty[udzial_500m] - powiaty[Oczekiwany zasięg 500 m] ) * 100
+		dataType: double
+		lineageTag: f43f60df-05d6-4e64-8c0a-35eef90e116d
+		summarizeBy: none
+		formatString: +0;-0;0
+
+	column 'Klasa zasięgu' =
+			    SWITCH (
+			        TRUE (),
+			        powiaty[udzial_500m] < 0.20, "1. poniżej 20%",
+			        powiaty[udzial_500m] < 0.35, "2. 20–35%",
+			        powiaty[udzial_500m] < 0.55, "3. 35–55%",
+			        powiaty[udzial_500m] < 0.70, "4. 55–70%",
+			        "5. powyżej 70%"
+			    )
+		dataType: string
+		lineageTag: 6736ae65-a79c-43a7-8ea6-74bc3e7564fa
+		summarizeBy: none
+
+	partition powiaty = m
+		mode: import
+		source =
+				let
+				    Plik = Folder & "powiaty.parquet",
+				    Zawartosc = if Text.StartsWith(Folder, "http") then Web.Contents(Plik) else File.Contents(Plik),
+				    Zrodlo = Parquet.Document(Binary.Buffer(Zawartosc))
+				in
+				    Zrodlo
+
